@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'corrigir_prova.dart';
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -13,7 +15,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final List<Widget> _pages = const [
     Center(child: Text('Tela: Criar Prova')),
     Center(child: Text('Tela: Banco de Questões')),
-    Center(child: Text('Tela: Corrigir Prova')),
+    CorrigirProvaScreen(),
     Center(child: Text('Tela: Relatórios')),
   ];
 
