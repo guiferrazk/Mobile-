@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'banco_questoes.dart';
 import 'corrigir_prova.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -14,7 +15,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> _pages = const [
     Center(child: Text('Tela: Criar Prova')),
-    Center(child: Text('Tela: Banco de Questões')),
+    BancoQuestoesScreen(),
     CorrigirProvaScreen(),
     Center(child: Text('Tela: Relatórios')),
   ];
