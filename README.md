@@ -1,28 +1,26 @@
-readme_content = """# 📱 Mobile - Sistema de Gestão e Correção de Provas
+<p align="center">
+  <h1 align="center">📱 Mobile — Sistema de Gestão e Correção de Avaliações</h1>
+</p>
 
-Aplicativo desenvolvido em **Flutter** com o objetivo de auxiliar professores no gerenciamento de avaliações, oferecendo recursos desde a criação e banco de questões até a correção simulada por QR Code e geração de relatórios de desempenho.
-
----
-
-## 🎯 Objetivo do Projeto
-Fornecer uma ferramenta móvel ágil e intuitiva para o fluxo de avaliação escolar (MVP), permitindo o cadastro de questões, montagem dinâmica de provas, simulação de leitura de gabaritos e acompanhamento de notas de forma descentralizada.
-
----
-
-## 🛠️ Tecnologias Utilizadas
-* **[Flutter](https://flutter.dev/)** (Versão SDK recente)
-* **Dart** (Linguagem de programação)
-* **Visual Studio / VS Code** (Ambiente de Desenvolvimento)
-* **Git & GitHub** (Controle de versão e gestão de issues/projetos)
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-%2302569B.svg?style=for-the-badge&logo=Flutter&logoColor=white" alt="Flutter">
+  <img src="https://img.shields.io/badge/Dart-%230175C2.svg?style=for-the-badge&logo=dart&logoColor=white" alt="Dart">
+  <img src="https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow?style=for-the-badge" alt="Status">
+</p>
 
 ---
 
-## 🏗️ Arquitetura e Estrutura de Pastas
-O projeto segue uma organização limpa dividida por responsabilidades dentro da pasta `lib/`:
+## 📖 Sobre o Projeto
+
+O **Mobile** é um aplicativo desenvolvido em **Flutter** voltado para o ecossistema educacional. O sistema auxilia professores no ciclo completo de avaliações: desde a gestão de um banco de questões e a montagem dinâmica de provas, até a correção simulada por QR Code e a geração de relatórios de desempenho.
+
+---
+
+## 🏛️ Arquitetura e Estrutura de Pastas
 
 ```text
 lib/
-├── mocks/       # Dados estáticos simulados para testes e prototipagem
-├── models/      # Classes de domínio (Prova, Questao, Alternativa, Aluno)
-├── screens/     # Telas da interface gráfica (UI) e fluxos de navegação
-└── main.dart    # Ponto de entrada da aplicação e configuração de rotas
+├── mocks/       # Dados estáticos simulados para testes rápidos e validação de UI
+├── models/      # Classes de domínio da aplicação (Prova, Questao, Alternativa, Aluno)
+├── screens/     # Telas e fluxos da interface gráfica (UI)
+└── main.dart    # Ponto de entrada, configuração de tema e mapeamento de rotas
