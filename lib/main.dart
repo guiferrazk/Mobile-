@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'screens/login_screen.dart';
+import 'screens/login_screen.dart';
 import 'screens/resultado_prova_screen.dart';
 
 void main() {
@@ -18,8 +18,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      // Tela alterada temporariamente para testar a sua nova UI
-      home: ResultadoProvaScreen(), 
+      home: const LoginScreen(),
     );
   }
 }
