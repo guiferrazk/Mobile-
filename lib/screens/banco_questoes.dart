@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
-import 'package:mobile/models/alternativa_model.dart';
 import 'package:mobile/models/materia_model.dart';
 import 'package:mobile/models/questao_model.dart';
 
