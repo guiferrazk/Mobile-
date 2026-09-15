@@ -4,6 +4,8 @@ import '../mocks/mock_materia.dart';
 import '../mocks/mock_aluno.dart';
 import '../models/materia_model.dart';
 import '../models/aluno_model.dart';
+import 'resultado_prova_screen.dart';
+
 
 /// Tela que simula o fluxo de correção de provas.
 ///
@@ -166,6 +168,25 @@ class ProvaAlunoLidaScreen extends StatelessWidget {
                 Text('Aluno: ${aluno.nome}'),
                 const SizedBox(height: 8),
                 Text('Matrícula: ${aluno.matricula}'),
+                
+                // --- BOTÃO ADICIONADO AQUI ---
+                const SizedBox(height: 40),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    // Navega para a tela de resultado que você criou
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ResultadoProvaScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.analytics),
+                  label: const Text('Ver Resultado da Correção'),
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                ),
               ],
             ),
           ),
