@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'banco_questoes.dart';
 import 'corrigir_prova.dart';
 import 'criar_prova.dart';
+import 'relatorio_provas_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
     CriarProvaScreen(),
     BancoQuestoesScreen(),
     CorrigirProvaScreen(),
-    Center(child: Text('Tela: Relatórios')),
+    RelatorioProvasScreen(),
   ];
 
   @override
