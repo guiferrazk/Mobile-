@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'home_screen.dart'; // Importação adicionada para a Home
 
 class ResultadoProvaScreen extends StatelessWidget {
   // 1. Dados fixos (mockados) para simular o resultado
@@ -106,8 +107,12 @@ class ResultadoProvaScreen extends StatelessWidget {
             // 4. Botão para voltar à tela principal (Home)
             ElevatedButton(
               onPressed: () {
-                // Remove todas as telas e volta para a Home
-                Navigator.popUntil(context, (route) => route.isFirst);
+                // Apaga todo o histórico de telas e joga para a HomeScreen
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                  (Route<dynamic> route) => false,
+                );
               },
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
