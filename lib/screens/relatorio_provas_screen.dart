@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/widgets/titulo_pagina.dart';
 
 class RelatorioProvasScreen extends StatelessWidget {
   const RelatorioProvasScreen({super.key});
@@ -48,7 +49,7 @@ class RelatorioProvasScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Provas Corrigidas'),
+        title: const TituloPagina(icone: Icons.insights, texto: 'Provas Corrigidas'),
       ),
       body: ListView.builder(
         padding: const EdgeInsets.all(16),

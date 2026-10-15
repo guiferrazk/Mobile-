@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/widgets/titulo_pagina.dart';
 
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/services/aluno_service.dart';
@@ -83,7 +84,7 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Consultar Alunos'),
+        title: const TituloPagina(icone: Icons.groups_outlined, texto: 'Consultar Alunos'),
         actions: [
           PopupMenuButton<String>(
             onSelected: (opcao) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/widgets/titulo_pagina.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
@@ -71,15 +72,6 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
     }
   }
 
-  Future<void> _importarMock() async {
-    try {
-      final quantidade = await _questaoService.importarMock();
-      _mostrarMensagem('$quantidade questões importadas do mock.');
-    } catch (e) {
-      _mostrarMensagem('Não foi possível importar: $e');
-    }
-  }
-
   void _mostrarMensagem(String mensagem) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -91,20 +83,7 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Banco de Questões'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (opcao) {
-              if (opcao == 'importar') _importarMock();
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'importar',
-                child: Text('Importar questões do mock'),
-              ),
-            ],
-          ),
-        ],
+        title: const TituloPagina(icone: Icons.quiz_outlined, texto: 'Banco de Questões'),
       ),
       body: StreamBuilder<List<Questao>>(
         stream: _questaoService.listar(),
@@ -126,20 +105,6 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
           }
 
           final questoes = snapshot.data!;
-
-          if (questoes.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24.0),
-                child: Text(
-                  'Nenhuma questão cadastrada.\n'
-                      'Use "Adicionar questão" ou importe as questões do mock '
-                      'pelo menu no canto superior direito.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
 
           return ListView.separated(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),

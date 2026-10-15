@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/widgets/titulo_pagina.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
@@ -136,7 +137,7 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Criar Prova'),
+        title: const TituloPagina(icone: Icons.edit_note, texto: 'Criar Prova'),
       ),
       body: Center(
         child: ConstrainedBox(

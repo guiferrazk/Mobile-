@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/theme/app_theme.dart';
 import 'home_screen.dart';
 
 class LoginScreen extends StatelessWidget {
@@ -16,7 +17,7 @@ class LoginScreen extends StatelessWidget {
               const Icon(
                 Icons.school,
                 size: 80,
-                color: Colors.deepPurple,
+                color: AppCores.vinho,
               ),
               const SizedBox(height: 16),
               const Text(
@@ -24,7 +25,7 @@ class LoginScreen extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple,
+                  color: AppCores.vinho,
                 ),
               ),
               const SizedBox(height: 40),
@@ -38,7 +39,7 @@ class LoginScreen extends StatelessWidget {
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.deepPurple,
+                  backgroundColor: AppCores.vinho,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
                 ),

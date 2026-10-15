@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/widgets/titulo_pagina.dart';
 
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/services/aluno_service.dart';
@@ -92,7 +93,10 @@ class _CadastroAlunoScreenState extends State<CadastroAlunoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_editando ? 'Editar Aluno' : 'Cadastrar Aluno'),
+        title: TituloPagina(
+          icone: Icons.person_add_alt_1_outlined,
+          texto: _editando ? 'Editar Aluno' : 'Cadastrar Aluno',
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(

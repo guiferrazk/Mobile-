@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/widgets/titulo_pagina.dart';
 
 import '../mocks/mock_materia.dart';
 import '../mocks/mock_aluno.dart';
@@ -19,7 +20,7 @@ class CorrigirProvaScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Corrigir Prova'),
+        title: const TituloPagina(icone: Icons.document_scanner_outlined, texto: 'Corrigir Prova'),
       ),
       body: Center(
         child: SingleChildScrollView(

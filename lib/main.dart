@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/firebase_options.dart';
+import 'package:mobile/theme/app_theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/resultado_prova_screen.dart';
 
@@ -20,10 +21,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Corretor de Provas',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.tema,
       home: const LoginScreen(),
     );
   }
