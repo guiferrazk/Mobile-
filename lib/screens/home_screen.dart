@@ -8,12 +8,9 @@ import 'consulta_aluno.dart';
 import 'corrigir_prova.dart';
 import 'criar_prova.dart';
 import 'relatorio_provas_screen.dart';
+import 'cadastro_turma.dart';
+import 'consulta_turma.dart';
 
-/// Tela inicial: um atalho para cada tela do app.
-///
-/// Não há barra inferior nem menu lateral. Cada atalho abre a tela por
-/// cima da Home, e a seta de voltar da barra superior da tela volta
-/// para cá.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -122,6 +119,26 @@ class HomeScreen extends StatelessWidget {
                             subtitulo: 'Buscar, editar e excluir',
                             aoTocar: () =>
                                 _abrir(context, const ConsultaAlunoScreen()),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 24),
+                      _Secao(
+                        titulo: 'Turmas',
+                        atalhos: [
+                          _Atalho(
+                            icone: Icons.domain_add_outlined,
+                            titulo: 'Cadastrar turma',
+                            subtitulo: 'Criar uma nova turma e vincular alunos',
+                            aoTocar: () =>
+                                _abrir(context, const CadastroTurmaScreen()),
+                          ),
+                          _Atalho(
+                            icone: Icons.school_outlined,
+                            titulo: 'Consultar turmas',
+                            subtitulo: 'Buscar, editar e excluir turmas',
+                            aoTocar: () =>
+                                _abrir(context, const ConsultaTurmaScreen()),
                           ),
                         ],
                       ),

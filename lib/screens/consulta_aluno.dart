@@ -64,15 +64,6 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
     }
   }
 
-  Future<void> _importarMock() async {
-    try {
-      final quantidade = await _alunoService.importarMock();
-      _mostrarMensagem('$quantidade alunos importados do mock.');
-    } catch (e) {
-      _mostrarMensagem('Não foi possível importar: $e');
-    }
-  }
-
   void _mostrarMensagem(String mensagem) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
@@ -85,19 +76,6 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const TituloPagina(icone: Icons.groups_outlined, texto: 'Consultar Alunos'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (opcao) {
-              if (opcao == 'importar') _importarMock();
-            },
-            itemBuilder: (_) => const [
-              PopupMenuItem(
-                value: 'importar',
-                child: Text('Importar alunos do mock'),
-              ),
-            ],
-          ),
-        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -143,8 +121,7 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
                           padding: EdgeInsets.all(24.0),
                           child: Text(
                             'Nenhum aluno encontrado.\n'
-                                'Use "Cadastrar aluno" ou importe os alunos do mock '
-                                'pelo menu no canto superior direito.',
+                                'Use o botão abaixo para cadastrar um novo aluno.',
                             textAlign: TextAlign.center,
                           ),
                         ),
