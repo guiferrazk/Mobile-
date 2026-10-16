@@ -18,6 +18,7 @@ class _CadastroTurmaScreenState extends State<CadastroTurmaScreen> {
   final _formKey = GlobalKey<FormState>();
   final _turmaService = TurmaService();
   final _alunoService = AlunoService();
+  late final Stream<List<Aluno>> _alunosStream = _alunoService.listar();
 
   late final TextEditingController _nomeController;
   List<Aluno> _alunosSelecionados = [];
@@ -121,9 +122,9 @@ class _CadastroTurmaScreenState extends State<CadastroTurmaScreen> {
                   ),
                   const SizedBox(height: 8),
                   StreamBuilder<List<Aluno>>(
-                    stream: _alunoService.listar(),
+                    stream: _alunosStream,
                     builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
+                      if (!snapshot.hasData && !snapshot.hasError) {
                         return const Center(child: CircularProgressIndicator());
                       }
 
@@ -178,7 +179,10 @@ class _CadastroTurmaScreenState extends State<CadastroTurmaScreen> {
                         ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                         : const Icon(Icons.save),
                     label: Text(_salvando ? 'Salvando...' : 'Salvar turma'),

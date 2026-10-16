@@ -70,7 +70,7 @@ class RelatorioProvasScreen extends StatelessWidget {
             child: ListTile(
               contentPadding: const EdgeInsets.all(12),
               leading: CircleAvatar(
-                backgroundColor: notaColor.withOpacity(0.15),
+                backgroundColor: notaColor.withValues(alpha: 0.15),
                 child: Text(
                   nota.toStringAsFixed(1),
                   style: TextStyle(

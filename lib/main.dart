@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile/firebase_options.dart';
 import 'package:mobile/theme/app_theme.dart';
 import 'screens/login_screen.dart';
-import 'screens/resultado_prova_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
