@@ -14,6 +14,7 @@ class ConsultaAlunoScreen extends StatefulWidget {
 
 class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
   final _alunoService = AlunoService();
+  late final Stream<List<Aluno>> _alunosStream = _alunoService.listar();
 
   String _busca = '';
 
@@ -95,7 +96,7 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
               ),
               Expanded(
                 child: StreamBuilder<List<Aluno>>(
-                  stream: _alunoService.listar(),
+                  stream: _alunosStream,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Padding(

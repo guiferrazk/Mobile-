@@ -8,6 +8,8 @@ class CadastroAlunoScreen extends StatefulWidget {
   final Aluno? aluno;
 
   const CadastroAlunoScreen({super.key, this.aluno});
+
+  @override
   State<CadastroAlunoScreen> createState() => _CadastroAlunoScreenState();
 }
 
@@ -155,7 +157,10 @@ class _CadastroAlunoScreenState extends State<CadastroAlunoScreen> {
                         ? const SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
                     )
                         : const Icon(Icons.save),
                     label: Text(_salvando ? 'Salvando...' : 'Salvar aluno'),

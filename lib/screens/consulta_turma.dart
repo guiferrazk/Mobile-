@@ -14,6 +14,7 @@ class ConsultaTurmaScreen extends StatefulWidget {
 
 class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
   final _turmaService = TurmaService();
+  late final Stream<List<Turma>> _turmasStream = _turmaService.listar();
   String _filtro = '';
 
   void _editarTurma(Turma turma) {
@@ -93,7 +94,7 @@ class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
               ),
               Expanded(
                 child: StreamBuilder<List<Turma>>(
-                  stream: _turmaService.listar(),
+                  stream: _turmasStream,
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Center(

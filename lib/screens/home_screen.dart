@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'package:mobile/models/professor_model.dart';
+import 'package:mobile/services/auth_service.dart';
 import 'package:mobile/theme/app_theme.dart';
+
 import 'banco_questoes.dart';
 import 'cadastro_aluno.dart';
+import 'cadastro_turma.dart';
 import 'consulta_aluno.dart';
+import 'consulta_turma.dart';
 import 'corrigir_prova.dart';
 import 'criar_prova.dart';
+import 'perfil_professor_screen.dart';
 import 'relatorio_provas_screen.dart';
-import 'cadastro_turma.dart';
-import 'consulta_turma.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -52,7 +56,6 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      // Ícones claros na barra de status, porque o topo é vinho.
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
       ),
@@ -154,42 +157,114 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// Faixa vinho do topo, com o nome do app e a data de hoje.
-class _Cabecalho extends StatelessWidget {
+/// Faixa vinho do topo com saudação dinâmica e avatar clicável do professor.
+class _Cabecalho extends StatefulWidget {
   final String data;
 
   const _Cabecalho({required this.data});
 
   @override
+  State<_Cabecalho> createState() => _CabecalhoState();
+}
+
+class _CabecalhoState extends State<_Cabecalho> {
+  final _authService = AuthService();
+  Professor? _professor;
+
+  @override
+  void initState() {
+    super.initState();
+    _carregarPerfil();
+  }
+
+  Future<void> _carregarPerfil() async {
+    final prof = await _authService.obterPerfil();
+    if (mounted) {
+      setState(() => _professor = prof);
+    }
+  }
+
+  void _abrirPerfil() async {
+    final atualizou = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const PerfilProfessorScreen(),
+      ),
+    );
+
+    if (atualizou == true) {
+      _carregarPerfil();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final alturaBarraStatus = MediaQuery.of(context).padding.top;
+    final primeiroNome = _professor?.nomeCompleto.trim().isNotEmpty == true
+        ? _professor!.nomeCompleto.trim().split(' ').first
+        : null;
 
     return Column(
       children: [
         Container(
           width: double.infinity,
           color: AppCores.vinho,
-          padding: EdgeInsets.fromLTRB(24, alturaBarraStatus + 28, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: EdgeInsets.fromLTRB(24, alturaBarraStatus + 20, 20, 20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Text(
-                data.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.2,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.data.toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      primeiroNome != null
+                          ? 'Olá, $primeiroNome'
+                          : 'Corretor de Provas',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w700,
+                        height: 1.1,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Corretor de Provas',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w700,
-                  height: 1.1,
+              const SizedBox(width: 12),
+              Material(
+                color: Colors.transparent,
+                shape: const CircleBorder(),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: _abrirPerfil,
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.white24,
+                    backgroundImage: _professor?.fotoUrl != null &&
+                        _professor!.fotoUrl!.isNotEmpty
+                        ? NetworkImage(_professor!.fotoUrl!)
+                        : null,
+                    child: _professor?.fotoUrl == null ||
+                        _professor!.fotoUrl!.isEmpty
+                        ? const Icon(
+                      Icons.person_outline,
+                      color: Colors.white,
+                      size: 26,
+                    )
+                        : null,
+                  ),
                 ),
               ),
             ],

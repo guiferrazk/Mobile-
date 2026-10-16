@@ -3,8 +3,8 @@ import 'package:mobile/widgets/titulo_pagina.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
-import 'package:mobile/models/materia_model.dart';
 import 'package:mobile/models/questao_model.dart';
+import 'package:mobile/services/questao_service.dart';
 
 /// Tela onde o professor monta uma prova escolhendo questões do banco
 /// (mock), dá um título a ela e gera a prova. A partir da prova gerada,
@@ -32,6 +32,10 @@ class _ProvaGerada {
 class _CriarProvaScreenState extends State<CriarProvaScreen> {
   final TextEditingController _tituloController = TextEditingController();
 
+  final _questaoService = QuestaoService();
+  late final Stream<List<Questao>> _questoesStream = _questaoService.listar();
+  List<Questao> _questoesDisponiveis = [];
+
   final Set<String> _idsSelecionados = {};
 
   _ProvaGerada? _provaGerada;
@@ -43,24 +47,22 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
     super.dispose();
   }
 
-  /// Achata a lista de matérias em uma lista de pares (matéria, questão).
-  List<MapEntry<Materia, Questao>> get _todasQuestoes {
-    final List<MapEntry<Materia, Questao>> resultado = [];
-
+  /// Nome da matéria a partir do id guardado na questão.
+  String _nomeMateria(String? materiaId) {
     for (final materia in listaMateria) {
-      for (final questao in materia.questoes) {
-        resultado.add(MapEntry(materia, questao));
-      }
+      if (materia.id == materiaId) return materia.descricao;
     }
-
-    return resultado;
+    return 'Sem matéria';
   }
 
   /// Questões selecionadas, na ordem em que o professor as marcou
   /// (o Set mantém a ordem de inserção).
   List<Questao> get _questoesSelecionadas {
-    final mapa = {for (final e in _todasQuestoes) e.value.id: e.value};
-    return _idsSelecionados.map((id) => mapa[id]!).toList();
+    final mapa = {for (final q in _questoesDisponiveis) q.id: q};
+    return [
+      for (final id in _idsSelecionados)
+        if (mapa[id] != null) mapa[id]!,
+    ];
   }
 
   void _alternarSelecao(String questaoId, bool? selecionado) {
@@ -133,8 +135,6 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final questoes = _todasQuestoes;
-
     return Scaffold(
       appBar: AppBar(
         title: const TituloPagina(icone: Icons.edit_note, texto: 'Criar Prova'),
@@ -171,23 +171,46 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
                   height: 320,
                   child: Card(
                     margin: EdgeInsets.zero,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      itemCount: questoes.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
-                      itemBuilder: (context, index) {
-                        final materia = questoes[index].key;
-                        final questao = questoes[index].value;
-                        final selecionada =
-                        _idsSelecionados.contains(questao.id);
+                    child: StreamBuilder<List<Questao>>(
+                      stream: _questoesStream,
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(
+                            child: Text('Erro ao carregar questões:\n${snapshot.error}',
+                                textAlign: TextAlign.center),
+                          );
+                        }
+                        if (!snapshot.hasData) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
 
-                        return CheckboxListTile(
-                          value: selecionada,
-                          onChanged: (valor) =>
-                              _alternarSelecao(questao.id, valor),
-                          title: Text(questao.enunciado),
-                          subtitle: Text(materia.descricao),
-                          controlAffinity: ListTileControlAffinity.leading,
+                        final questoes = snapshot.data!;
+                        _questoesDisponiveis = questoes;
+
+                        if (questoes.isEmpty) {
+                          return const Center(
+                            child: Text('Nenhuma questão cadastrada no banco.'),
+                          );
+                        }
+
+                        return ListView.separated(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          itemCount: questoes.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final questao = questoes[index];
+                            final selecionada =
+                                _idsSelecionados.contains(questao.id);
+
+                            return CheckboxListTile(
+                              value: selecionada,
+                              onChanged: (valor) =>
+                                  _alternarSelecao(questao.id, valor),
+                              title: Text(questao.enunciado),
+                              subtitle: Text(_nomeMateria(questao.materiaId)),
+                              controlAffinity: ListTileControlAffinity.leading,
+                            );
+                          },
                         );
                       },
                     ),
@@ -289,8 +312,6 @@ class _ListaQuestoesPreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const letras = ['A', 'B', 'C', 'D', 'E', 'F'];
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -311,7 +332,7 @@ class _ListaQuestoesPreview extends StatelessWidget {
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2.0),
                       child: Text(
-                        '${letras[j]}) ${questoes[i].alternativas[j].texto}',
+                        '${String.fromCharCode(65 + j)}) ${questoes[i].alternativas[j].texto}',
                       ),
                     ),
                 ],
