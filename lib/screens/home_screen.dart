@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -10,6 +11,7 @@ import 'cadastro_aluno.dart';
 import 'cadastro_turma.dart';
 import 'consulta_aluno.dart';
 import 'consulta_turma.dart';
+import 'consultar_provas_screen.dart';
 import 'corrigir_prova.dart';
 import 'criar_prova.dart';
 import 'perfil_professor_screen.dart';
@@ -46,11 +48,15 @@ class HomeScreen extends StatelessWidget {
   String _dataDeHoje() {
     final agora = DateTime.now();
     final dia = _diasSemana[agora.weekday - 1];
+
     return '$dia, ${agora.day} de ${_meses[agora.month - 1]}';
   }
 
   void _abrir(BuildContext context, Widget tela) {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => tela));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => tela),
+    );
   }
 
   @override
@@ -78,7 +84,10 @@ class HomeScreen extends StatelessWidget {
                         aoTocar: () =>
                             _abrir(context, const CorrigirProvaScreen()),
                       ),
+
                       const SizedBox(height: 28),
+
+                      // Seção de provas e questões.
                       _Secao(
                         titulo: 'Provas e questões',
                         atalhos: [
@@ -89,6 +98,18 @@ class HomeScreen extends StatelessWidget {
                             aoTocar: () =>
                                 _abrir(context, const CriarProvaScreen()),
                           ),
+
+                          // NOVO: Consulta e edição de provas no Firestore.
+                          _Atalho(
+                            icone: Icons.library_books_outlined,
+                            titulo: 'Consultar provas',
+                            subtitulo: 'Visualizar e editar provas cadastradas',
+                            aoTocar: () => _abrir(
+                              context,
+                              const ConsultarProvasScreen(),
+                            ),
+                          ),
+
                           _Atalho(
                             icone: Icons.quiz_outlined,
                             titulo: 'Banco de questões',
@@ -96,6 +117,7 @@ class HomeScreen extends StatelessWidget {
                             aoTocar: () =>
                                 _abrir(context, const BancoQuestoesScreen()),
                           ),
+
                           _Atalho(
                             icone: Icons.insights,
                             titulo: 'Provas corrigidas',
@@ -105,7 +127,10 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 24),
+
+                      // Seção de alunos.
                       _Secao(
                         titulo: 'Alunos',
                         atalhos: [
@@ -116,6 +141,7 @@ class HomeScreen extends StatelessWidget {
                             aoTocar: () =>
                                 _abrir(context, const CadastroAlunoScreen()),
                           ),
+
                           _Atalho(
                             icone: Icons.groups_outlined,
                             titulo: 'Consultar alunos',
@@ -125,17 +151,22 @@ class HomeScreen extends StatelessWidget {
                           ),
                         ],
                       ),
+
                       const SizedBox(height: 24),
+
+                      // Seção de turmas.
                       _Secao(
                         titulo: 'Turmas',
                         atalhos: [
                           _Atalho(
                             icone: Icons.domain_add_outlined,
                             titulo: 'Cadastrar turma',
-                            subtitulo: 'Criar uma nova turma e vincular alunos',
+                            subtitulo:
+                                'Criar uma nova turma e vincular alunos',
                             aoTocar: () =>
                                 _abrir(context, const CadastroTurmaScreen()),
                           ),
+
                           _Atalho(
                             icone: Icons.school_outlined,
                             titulo: 'Consultar turmas',
@@ -157,7 +188,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-/// Faixa vinho do topo com saudação dinâmica e avatar clicável do professor.
+/// Cabeçalho com data, saudação e perfil do professor.
 class _Cabecalho extends StatefulWidget {
   final String data;
 
@@ -169,6 +200,7 @@ class _Cabecalho extends StatefulWidget {
 
 class _CabecalhoState extends State<_Cabecalho> {
   final _authService = AuthService();
+
   Professor? _professor;
 
   @override
@@ -179,6 +211,7 @@ class _CabecalhoState extends State<_Cabecalho> {
 
   Future<void> _carregarPerfil() async {
     final prof = await _authService.obterPerfil();
+
     if (mounted) {
       setState(() => _professor = prof);
     }
@@ -200,16 +233,23 @@ class _CabecalhoState extends State<_Cabecalho> {
   @override
   Widget build(BuildContext context) {
     final alturaBarraStatus = MediaQuery.of(context).padding.top;
-    final primeiroNome = _professor?.nomeCompleto.trim().isNotEmpty == true
-        ? _professor!.nomeCompleto.trim().split(' ').first
-        : null;
+
+    final primeiroNome =
+        _professor?.nomeCompleto.trim().isNotEmpty == true
+            ? _professor!.nomeCompleto.trim().split(' ').first
+            : null;
 
     return Column(
       children: [
         Container(
           width: double.infinity,
           color: AppCores.vinho,
-          padding: EdgeInsets.fromLTRB(24, alturaBarraStatus + 20, 20, 20),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            alturaBarraStatus + 20,
+            20,
+            20,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -227,7 +267,9 @@ class _CabecalhoState extends State<_Cabecalho> {
                         letterSpacing: 1.2,
                       ),
                     ),
+
                     const SizedBox(height: 6),
+
                     Text(
                       primeiroNome != null
                           ? 'Olá, $primeiroNome'
@@ -242,7 +284,9 @@ class _CabecalhoState extends State<_Cabecalho> {
                   ],
                 ),
               ),
+
               const SizedBox(width: 12),
+
               Material(
                 color: Colors.transparent,
                 shape: const CircleBorder(),
@@ -252,31 +296,37 @@ class _CabecalhoState extends State<_Cabecalho> {
                   child: CircleAvatar(
                     radius: 24,
                     backgroundColor: Colors.white24,
-                    backgroundImage: _professor?.fotoUrl != null &&
-                        _professor!.fotoUrl!.isNotEmpty
-                        ? NetworkImage(_professor!.fotoUrl!)
-                        : null,
-                    child: _professor?.fotoUrl == null ||
-                        _professor!.fotoUrl!.isEmpty
-                        ? const Icon(
-                      Icons.person_outline,
-                      color: Colors.white,
-                      size: 26,
-                    )
-                        : null,
+                    backgroundImage:
+                        _professor?.fotoUrl != null &&
+                                _professor!.fotoUrl!.isNotEmpty
+                            ? NetworkImage(_professor!.fotoUrl!)
+                            : null,
+                    child:
+                        _professor?.fotoUrl == null ||
+                                _professor!.fotoUrl!.isEmpty
+                            ? const Icon(
+                                Icons.person_outline,
+                                color: Colors.white,
+                                size: 26,
+                              )
+                            : null,
                   ),
                 ),
               ),
             ],
           ),
         ),
-        Container(height: 4, color: AppCores.vinhoEscuro),
+
+        Container(
+          height: 4,
+          color: AppCores.vinhoEscuro,
+        ),
       ],
     );
   }
 }
 
-/// Atalho em destaque, em bloco vinho.
+/// Atalho principal em destaque.
 class _AtalhoPrincipal extends StatelessWidget {
   final IconData icone;
   final String titulo;
@@ -314,7 +364,9 @@ class _AtalhoPrincipal extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+
                     const SizedBox(height: 4),
+
                     Text(
                       subtitulo,
                       style: TextStyle(
@@ -325,8 +377,14 @@ class _AtalhoPrincipal extends StatelessWidget {
                   ],
                 ),
               ),
+
               const SizedBox(width: 16),
-              Icon(icone, size: 44, color: Colors.white),
+
+              Icon(
+                icone,
+                size: 44,
+                color: Colors.white,
+              ),
             ],
           ),
         ),
@@ -335,6 +393,7 @@ class _AtalhoPrincipal extends StatelessWidget {
   }
 }
 
+/// Modelo dos atalhos das seções.
 class _Atalho {
   final IconData icone;
   final String titulo;
@@ -349,12 +408,15 @@ class _Atalho {
   });
 }
 
-/// Grupo de atalhos em lista, separados por uma linha fina.
+/// Seção com lista de atalhos.
 class _Secao extends StatelessWidget {
   final String titulo;
   final List<_Atalho> atalhos;
 
-  const _Secao({required this.titulo, required this.atalhos});
+  const _Secao({
+    required this.titulo,
+    required this.atalhos,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -373,18 +435,28 @@ class _Secao extends StatelessWidget {
             ),
           ),
         ),
+
         Material(
           color: Colors.white,
           clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(6),
-            side: const BorderSide(color: AppCores.borda),
+            side: const BorderSide(
+              color: AppCores.borda,
+            ),
           ),
           child: Column(
             children: [
               for (var i = 0; i < atalhos.length; i++) ...[
-                if (i > 0) const Divider(height: 1, color: AppCores.borda),
-                _LinhaAtalho(atalho: atalhos[i]),
+                if (i > 0)
+                  const Divider(
+                    height: 1,
+                    color: AppCores.borda,
+                  ),
+
+                _LinhaAtalho(
+                  atalho: atalhos[i],
+                ),
               ],
             ],
           ),
@@ -394,21 +466,33 @@ class _Secao extends StatelessWidget {
   }
 }
 
+/// Linha clicável de um atalho.
 class _LinhaAtalho extends StatelessWidget {
   final _Atalho atalho;
 
-  const _LinhaAtalho({required this.atalho});
+  const _LinhaAtalho({
+    required this.atalho,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: atalho.aoTocar,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         child: Row(
           children: [
-            Icon(atalho.icone, size: 26, color: AppCores.vinho),
+            Icon(
+              atalho.icone,
+              size: 26,
+              color: AppCores.vinho,
+            ),
+
             const SizedBox(width: 16),
+
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,7 +505,9 @@ class _LinhaAtalho extends StatelessWidget {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+
                   const SizedBox(height: 2),
+
                   Text(
                     atalho.subtitulo,
                     style: const TextStyle(
@@ -432,7 +518,11 @@ class _LinhaAtalho extends StatelessWidget {
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: AppCores.textoSuave),
+
+            const Icon(
+              Icons.chevron_right,
+              color: AppCores.textoSuave,
+            ),
           ],
         ),
       ),
