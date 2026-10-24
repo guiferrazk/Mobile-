@@ -23,6 +23,17 @@ class AlunoService {
     );
   }
 
+  Future<Aluno?> buscarPorId(String id) async {
+    final documento = await _colecao.doc(id).get();
+    final dados = documento.data();
+
+    if (!documento.exists || dados == null) {
+      return null;
+    }
+
+    return Aluno.fromMap(documento.id, dados);
+  }
+
   Future<void> cadastrar(Aluno aluno) async {
     await _validarMatriculaUnica(aluno.matricula);
     await _colecao.add(aluno.toMap());
