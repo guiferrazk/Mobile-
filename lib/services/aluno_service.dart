@@ -37,6 +37,32 @@ class AlunoService {
     return _colecao.doc(id).delete();
   }
 
+  Future<Set<String>> matriculasCadastradas() async {
+    final resultado = await _colecao.get();
+    return resultado.docs
+        .map((doc) => doc.data()['matricula'] as String? ?? '')
+        .where((matricula) => matricula.isNotEmpty)
+        .toSet();
+  }
+
+  /// Grava vários alunos de uma vez. Os dados já devem ter sido validados
+  /// (ver `ImportacaoAlunos.validar`).
+  Future<void> importar(List<Aluno> alunos) async {
+    // O Firestore aceita no máximo 500 operações por batch.
+    const tamanhoLote = 500;
+
+    for (var inicio = 0; inicio < alunos.length; inicio += tamanhoLote) {
+      final batch = FirebaseFirestore.instance.batch();
+      final lote = alunos.skip(inicio).take(tamanhoLote);
+
+      for (final aluno in lote) {
+        batch.set(_colecao.doc(), aluno.toMap());
+      }
+
+      await batch.commit();
+    }
+  }
+
   Future<int> importarMock() async {
     final batch = FirebaseFirestore.instance.batch();
 
