@@ -2,16 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 
 import '../mocks/mock_materia.dart';
-import '../mocks/mock_aluno.dart';
 import '../models/materia_model.dart';
 import '../models/aluno_model.dart';
 import 'resultado_prova_screen.dart';
+import 'selecionar_aluno_screen.dart';
 
 
 /// Tela que simula o fluxo de correção de provas.
 ///
-/// Ainda não há integração com a câmera: os botões apenas navegam
-/// para telas de resultado usando dados fixos vindos dos mocks,
+/// Ainda não há integração com a câmera: o gabarito vem do mock de
+/// matérias e o aluno é escolhido entre os cadastrados no Firestore,
 /// como se a leitura tivesse sido feita com sucesso.
 class CorrigirProvaScreen extends StatelessWidget {
   const CorrigirProvaScreen({super.key});
@@ -86,10 +86,15 @@ class CorrigirProvaScreen extends StatelessWidget {
   }
 
   /// Simula a leitura da folha de respostas do aluno.
-  /// Sem câmera real ainda: usa o primeiro aluno do mock como se
-  /// tivesse sido identificado a partir da prova escaneada.
-  void _lerProvaAluno(BuildContext context) {
-    final Aluno aluno = listaAluno.first;
+  /// Sem câmera real ainda: o professor escolhe o aluno entre os
+  /// cadastrados no Firestore, no lugar da identificação pela folha.
+  Future<void> _lerProvaAluno(BuildContext context) async {
+    final Aluno? aluno = await Navigator.push<Aluno>(
+      context,
+      MaterialPageRoute(builder: (_) => const SelecionarAlunoScreen()),
+    );
+
+    if (aluno == null || !context.mounted) return;
 
     Navigator.push(
       context,
