@@ -131,7 +131,8 @@ class _ImportarAlunosScreenState extends State<ImportarAlunosScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            'A primeira linha deve ter os títulos Nome, E-mail e Matrícula. '
+            'A planilha deve ter uma linha com os títulos Nome, E-mail e '
+            'Matrícula (pode haver um título antes dela). '
             'Antes de gravar, você verá uma prévia com os dados encontrados.',
             textAlign: TextAlign.center,
           ),

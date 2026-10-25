@@ -42,9 +42,10 @@ class LinhaImportacao {
 /// Lê a lista de alunos de um arquivo `.xlsx` ou `.csv` e valida cada
 /// linha antes de qualquer gravação no Firestore.
 ///
-/// O arquivo deve ter as colunas Nome, E-mail e Matrícula. Se a primeira
-/// linha tiver esses títulos, as colunas podem estar em qualquer ordem;
-/// sem cabeçalho, a ordem esperada é nome, e-mail, matrícula.
+/// O arquivo deve ter as colunas Nome, E-mail e Matrícula. Se uma das
+/// primeiras linhas tiver esses títulos, as colunas podem estar em
+/// qualquer ordem e o que vem antes (título da planilha, observações) é
+/// ignorado; sem cabeçalho, a ordem esperada é nome, e-mail, matrícula.
 class ImportacaoAlunos {
   static const extensoesAceitas = ['xlsx', 'csv'];
 
@@ -66,15 +67,13 @@ class ImportacaoAlunos {
         ),
     };
 
-    final naoVazias = linhas
-        .where((linha) => linha.any((celula) => celula.isNotEmpty))
-        .toList();
-
-    if (naoVazias.isEmpty) {
+    if (!linhas.any((linha) => !_vazia(linha))) {
       throw ImportacaoException('O arquivo está vazio.');
     }
 
-    return naoVazias;
+    // As linhas em branco são mantidas para que o número de cada linha
+    // continue igual ao que o professor vê no Excel.
+    return linhas;
   }
 
   /// Valida as linhas lidas. [matriculasCadastradas] são as matrículas que
@@ -83,17 +82,19 @@ class ImportacaoAlunos {
     List<List<String>> linhas, {
     Set<String> matriculasCadastradas = const {},
   }) {
-    final indices = _indicesDoCabecalho(linhas.first);
-    final temCabecalho = indices != null;
-    final colunas = indices ?? {'nome': 0, 'email': 1, 'matricula': 2};
-    final dados = temCabecalho ? linhas.skip(1) : linhas;
+    final cabecalho = _procurarCabecalho(linhas);
+    final colunas =
+        cabecalho?.colunas ?? const {'nome': 0, 'email': 1, 'matricula': 2};
+    final inicioDados = cabecalho == null ? 0 : cabecalho.indiceLinha + 1;
 
     final primeiraLinhaPorMatricula = <String, int>{};
     final resultado = <LinhaImportacao>[];
-    var numeroLinha = temCabecalho ? 1 : 0;
 
-    for (final linha in dados) {
-      numeroLinha++;
+    for (var i = inicioDados; i < linhas.length; i++) {
+      final linha = linhas[i];
+      final numeroLinha = i + 1;
+
+      if (_vazia(linha)) continue;
 
       String celula(String coluna) {
         final indice = colunas[coluna]!;
@@ -132,7 +133,38 @@ class ImportacaoAlunos {
       ));
     }
 
+    // Sem cabeçalho e com quase tudo inválido, o arquivo provavelmente não
+    // é uma lista de alunos. Listar cada linha com erro só confundiria.
+    final invalidas = resultado.where((linha) => !linha.valida).length;
+    if (cabecalho == null && invalidas * 2 > resultado.length) {
+      throw ImportacaoException(
+        'Esta planilha não parece uma lista de alunos. Confira se ela tem '
+        'uma linha de títulos com as colunas Nome, E-mail e Matrícula.',
+      );
+    }
+
     return resultado;
+  }
+
+  static bool _vazia(List<String> linha) {
+    return linha.every((celula) => celula.trim().isEmpty);
+  }
+
+  /// Procura a linha de títulos nas primeiras linhas do arquivo, porque
+  /// muitas planilhas têm um título ou observações antes da tabela.
+  static ({int indiceLinha, Map<String, int> colunas})? _procurarCabecalho(
+    List<List<String>> linhas,
+  ) {
+    const limite = 10;
+
+    for (var i = 0; i < linhas.length && i < limite; i++) {
+      final colunas = _indicesDoCabecalho(linhas[i]);
+      if (colunas != null) {
+        return (indiceLinha: i, colunas: colunas);
+      }
+    }
+
+    return null;
   }
 
   static List<List<String>> _lerXlsx(Uint8List bytes) {
@@ -184,10 +216,10 @@ class ImportacaoAlunos {
     return texto.startsWith('﻿') ? texto.substring(1) : texto;
   }
 
-  /// Procura os títulos das colunas na primeira linha. Devolve `null` se
-  /// ela não parecer um cabeçalho.
-  static Map<String, int>? _indicesDoCabecalho(List<String> primeiraLinha) {
-    final titulos = primeiraLinha.map(_normalizar).toList();
+  /// Procura os títulos das colunas na [linha]. Devolve `null` se ela não
+  /// parecer um cabeçalho.
+  static Map<String, int>? _indicesDoCabecalho(List<String> linha) {
+    final titulos = linha.map(_normalizar).toList();
     final indices = <String, int>{};
 
     _apelidosColunas.forEach((coluna, apelidos) {
