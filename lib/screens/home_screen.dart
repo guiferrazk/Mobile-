@@ -12,6 +12,7 @@ import 'consulta_aluno.dart';
 import 'consulta_turma.dart';
 import 'corrigir_prova.dart';
 import 'criar_prova.dart';
+import 'importar_alunos_screen.dart';
 import 'perfil_professor_screen.dart';
 import 'relatorio_provas_screen.dart';
 
@@ -122,6 +123,13 @@ class HomeScreen extends StatelessWidget {
                             subtitulo: 'Buscar, editar e excluir',
                             aoTocar: () =>
                                 _abrir(context, const ConsultaAlunoScreen()),
+                          ),
+                          _Atalho(
+                            icone: Icons.upload_file_outlined,
+                            titulo: 'Importar alunos',
+                            subtitulo: 'Trazer a lista de uma planilha',
+                            aoTocar: () =>
+                                _abrir(context, const ImportarAlunosScreen()),
                           ),
                         ],
                       ),

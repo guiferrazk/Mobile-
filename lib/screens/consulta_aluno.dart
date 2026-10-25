@@ -4,6 +4,7 @@ import 'package:mobile/widgets/titulo_pagina.dart';
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/services/aluno_service.dart';
 import 'cadastro_aluno.dart';
+import 'importar_alunos_screen.dart';
 
 class ConsultaAlunoScreen extends StatefulWidget {
   const ConsultaAlunoScreen({super.key});
@@ -77,6 +78,16 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const TituloPagina(icone: Icons.groups_outlined, texto: 'Consultar Alunos'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.upload_file_outlined),
+            tooltip: 'Importar planilha',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ImportarAlunosScreen()),
+            ),
+          ),
+        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -122,7 +133,8 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
                           padding: EdgeInsets.all(24.0),
                           child: Text(
                             'Nenhum aluno encontrado.\n'
-                                'Use o botão abaixo para cadastrar um novo aluno.',
+                                'Cadastre um aluno pelo botão abaixo ou importe '
+                                'uma planilha pelo ícone no topo.',
                             textAlign: TextAlign.center,
                           ),
                         ),

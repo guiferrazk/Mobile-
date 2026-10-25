@@ -3,6 +3,7 @@ import 'package:mobile/widgets/titulo_pagina.dart';
 
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/services/aluno_service.dart';
+import 'package:mobile/utils/validadores_aluno.dart';
 
 class CadastroAlunoScreen extends StatefulWidget {
   final Aluno? aluno;
@@ -52,7 +53,7 @@ class _CadastroAlunoScreenState extends State<CadastroAlunoScreen> {
     final aluno = Aluno(
       id: widget.aluno?.id ?? '',
       nome: _nomeController.text.trim(),
-      email: _emailController.text.trim(),
+      email: _emailController.text.trim().toLowerCase(),
       matricula: _matriculaController.text.trim(),
     );
 
@@ -117,9 +118,7 @@ class _CadastroAlunoScreenState extends State<CadastroAlunoScreen> {
                       labelText: 'Nome completo',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (valor) => (valor == null || valor.trim().isEmpty)
-                        ? 'Informe o nome'
-                        : null,
+                    validator: ValidadoresAluno.nome,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -129,14 +128,7 @@ class _CadastroAlunoScreenState extends State<CadastroAlunoScreen> {
                       labelText: 'E-mail',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (valor) {
-                      final email = valor?.trim() ?? '';
-                      if (email.isEmpty) return 'Informe o e-mail';
-                      if (!email.contains('@') || !email.contains('.')) {
-                        return 'E-mail inválido';
-                      }
-                      return null;
-                    },
+                    validator: ValidadoresAluno.email,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -146,9 +138,7 @@ class _CadastroAlunoScreenState extends State<CadastroAlunoScreen> {
                       labelText: 'Matrícula',
                       border: OutlineInputBorder(),
                     ),
-                    validator: (valor) => (valor == null || valor.trim().isEmpty)
-                        ? 'Informe a matrícula'
-                        : null,
+                    validator: ValidadoresAluno.matricula,
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
