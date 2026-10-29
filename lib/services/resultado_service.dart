@@ -84,6 +84,21 @@ class ResultadoService {
     });
   }
 
+  /// Todos os resultados de todas as provas, do mais recente para o mais
+  /// antigo. Usado na tela de provas corrigidas.
+  Stream<List<Resultado>> listarTodos() {
+    return _colecao.snapshots().map(
+          (snapshot) => snapshot.docs
+              .map((doc) => _deDocumento(doc.data()))
+              .toList()
+            ..sort((a, b) {
+              final dataA = a.corrigidoEm ?? DateTime(0);
+              final dataB = b.corrigidoEm ?? DateTime(0);
+              return dataB.compareTo(dataA);
+            }),
+        );
+  }
+
   Future<void> excluir(String provaId, String alunoId) {
     return _colecao.doc(Resultado.idPara(provaId, alunoId)).delete();
   }
