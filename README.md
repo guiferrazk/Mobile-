@@ -93,10 +93,31 @@ Além do escopo original, a N2 trouxe cadastro e login de professor, cadastro e 
 
 📌 **N1** (atualizado na N2)
 
+**Acesso**
+
+![Tela de login](docs/telas/login.png)
+*Login: o professor entra com e-mail e senha (Firebase Auth) ou cria uma conta em "Cadastre-se".*
+
+![Tela inicial](docs/telas/home.png)
+*Home: menu principal com o atalho de correção em destaque e as seções de provas e questões, alunos e turmas.*
+
+**Montagem da prova**
+
+![Criar prova](docs/telas/criar-prova.png)
+*Criar prova: o professor dá um título, escolhe as questões do banco (lidas do Firestore) e gera a prova, com opção de gerar variações embaralhadas.*
+
 **Correção de prova**
 
 ![Prova do aluno lida](docs/telas/correcao-prova-aluno-lida.png)
 *Corrigir Prova → Ler prova do aluno: o professor escolhe o aluno entre os cadastrados no Firestore e o app mostra a prova identificada.*
+
+**Resultados**
+
+![Provas corrigidas](docs/telas/provas-corrigidas.png)
+*Provas corrigidas: lista em tempo real dos resultados salvos no Firestore, com nota, acertos e data de cada aluno.*
+
+![Estatísticas da prova](docs/telas/estatisticas-prova.png)
+*Estatísticas da prova: ao tocar em uma prova corrigida, mostra a média da turma e, para cada questão, quantos alunos marcaram cada alternativa, com a correta em destaque.*
 
 **Alunos**
 
