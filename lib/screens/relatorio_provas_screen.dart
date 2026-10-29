@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mobile/models/resultado_model.dart';
 import 'package:mobile/services/resultado_service.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/screens/estatisticas_prova_screen.dart';
 
 /// Lista as provas já corrigidas, lendo os resultados do Firestore
 /// (coleção `resultados`). A lista atualiza sozinha quando um resultado
@@ -144,6 +145,17 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
                     margin: const EdgeInsets.only(bottom: 12),
                     child: ListTile(
                       contentPadding: const EdgeInsets.all(12),
+                                            onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EstatisticasProvaScreen(
+                              provaId: resultado.provaId,
+                            ),
+                          ),
+                        );
+                      },
+                      trailing: const Icon(Icons.bar_chart),
                       leading: CircleAvatar(
                         backgroundColor: corDaNota.withValues(alpha: 0.15),
                         child: Text(
