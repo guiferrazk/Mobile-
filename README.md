@@ -357,10 +357,10 @@ Backlog real da N2, conferido com os Pull Requests mesclados no repositório.
 
 | Tarefa | Prazo | Status |
 |---|---|---|
-| Revisar navegação e integração entre telas | 13/10 | Pendente |
-| Revisar estados de carregamento, erro e dados vazios | 17/10 | Pendente |
-| Gerar e validar APK com banco funcional | 23/10 | Pendente |
-| Atualizar diário de bordo individual | 25/10 | Pendente |
+| Revisar navegação e integração entre telas | 13/10 | Concluído |
+| Revisar estados de carregamento, erro e dados vazios | 17/10 | Concluído |
+| Gerar e validar APK com banco funcional | 23/10 | Concluído |
+| Atualizar diário de bordo individual | 25/10 | Concluído |
 
 ---
 
