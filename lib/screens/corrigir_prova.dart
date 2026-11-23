@@ -1,23 +1,129 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 
-import '../mocks/mock_materia.dart';
-import '../models/materia_model.dart';
 import '../models/aluno_model.dart';
+import '../models/prova_model.dart';
+import '../services/localizador_prova.dart';
+import 'leitor_qrcode_screen.dart';
 import 'resultado_prova_screen.dart';
 import 'selecionar_aluno_screen.dart';
 
 
-/// Tela que simula o fluxo de correção de provas.
+/// Fluxo de correção de provas.
 ///
-/// Ainda não há integração com a câmera: o gabarito vem do mock de
-/// matérias e o aluno é escolhido entre os cadastrados no Firestore,
-/// como se a leitura tivesse sido feita com sucesso.
-class CorrigirProvaScreen extends StatelessWidget {
+/// Primeiro o professor lê o QR Code do gabarito, que identifica a prova
+/// no Firestore. Depois lê o QR Code da folha de resposta de cada aluno;
+/// o app confere se a folha é da mesma prova e localiza o aluno. Se a
+/// folha não puder ser lida, o aluno também pode ser escolhido na lista.
+class CorrigirProvaScreen extends StatefulWidget {
   const CorrigirProvaScreen({super.key});
 
   @override
+  State<CorrigirProvaScreen> createState() => _CorrigirProvaScreenState();
+}
+
+class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
+  final _localizador = LocalizadorProva.firestore();
+
+  Prova? _prova;
+  bool _buscando = false;
+
+  Future<void> _lerQrCodeGabarito() async {
+    final conteudo = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LeitorQrCodeScreen(
+          titulo: 'Ler Gabarito',
+          instrucao: 'Aponte a câmera para o QR Code do gabarito.',
+        ),
+      ),
+    );
+
+    if (conteudo == null || !mounted) return;
+
+    setState(() => _buscando = true);
+
+    try {
+      final prova = await _localizador.localizarGabarito(conteudo);
+      if (!mounted) return;
+      setState(() => _prova = prova);
+    } on LeituraQrCodeException catch (e) {
+      _mostrarMensagem(e.mensagem);
+    } catch (e) {
+      _mostrarMensagem('Não foi possível buscar a prova: $e');
+    } finally {
+      if (mounted) setState(() => _buscando = false);
+    }
+  }
+
+  Future<void> _lerFolhaAluno() async {
+    final prova = _prova;
+    if (prova == null) return;
+
+    final conteudo = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LeitorQrCodeScreen(
+          titulo: 'Ler Folha do Aluno',
+          instrucao: 'Aponte a câmera para o QR Code da folha de resposta.',
+        ),
+      ),
+    );
+
+    if (conteudo == null || !mounted) return;
+
+    setState(() => _buscando = true);
+
+    try {
+      final aluno = await _localizador.localizarAlunoDaFolha(
+        conteudo,
+        prova: prova,
+      );
+      if (!mounted) return;
+      _abrirProvaDoAluno(aluno, prova);
+    } on LeituraQrCodeException catch (e) {
+      _mostrarMensagem(e.mensagem);
+    } catch (e) {
+      _mostrarMensagem('Não foi possível buscar o aluno: $e');
+    } finally {
+      if (mounted) setState(() => _buscando = false);
+    }
+  }
+
+  /// Alternativa para quando o QR Code da folha está danificado ou ilegível.
+  Future<void> _escolherAlunoNaLista() async {
+    final prova = _prova;
+    if (prova == null) return;
+
+    final aluno = await Navigator.push<Aluno>(
+      context,
+      MaterialPageRoute(builder: (_) => const SelecionarAlunoScreen()),
+    );
+
+    if (aluno == null || !mounted) return;
+    _abrirProvaDoAluno(aluno, prova);
+  }
+
+  void _abrirProvaDoAluno(Aluno aluno, Prova prova) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProvaAlunoLidaScreen(aluno: aluno, prova: prova),
+      ),
+    );
+  }
+
+  void _mostrarMensagem(String mensagem) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem)),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final prova = _prova;
+
     return Scaffold(
       appBar: AppBar(
         title: const TituloPagina(icone: Icons.document_scanner_outlined, texto: 'Corrigir Prova'),
@@ -32,6 +138,7 @@ class CorrigirProvaScreen extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 480),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Icon(
                   Icons.qr_code_scanner,
@@ -45,24 +152,52 @@ class CorrigirProvaScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 32),
+                if (prova != null) ...[
+                  _GabaritoLido(prova: prova),
+                  const SizedBox(height: 24),
+                ],
+                if (_buscando)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Center(child: CircularProgressIndicator()),
+                  ),
                 ElevatedButton.icon(
-                  onPressed: () => _lerQrCodeGabarito(context),
+                  onPressed: _buscando ? null : _lerQrCodeGabarito,
                   icon: const Icon(Icons.qr_code),
-                  label: const Text('Ler QR Code do gabarito'),
+                  label: Text(
+                    prova == null
+                        ? 'Ler QR Code do gabarito'
+                        : 'Ler outro gabarito',
+                  ),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                   ),
                 ),
                 const SizedBox(height: 16),
                 ElevatedButton.icon(
-                  onPressed: () => _lerProvaAluno(context),
+                  onPressed: prova == null || _buscando ? null : _lerFolhaAluno,
                   icon: const Icon(Icons.assignment),
                   label: const Text('Ler prova do aluno'),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                   ),
                 ),
+                if (prova != null)
+                  TextButton(
+                    onPressed: _buscando ? null : _escolherAlunoNaLista,
+                    child: const Text('Folha ilegível? Escolher o aluno na lista'),
+                  )
+                else
+                  const Padding(
+                    padding: EdgeInsets.only(top: 12),
+                    child: Text(
+                      'A leitura da prova do aluno é liberada depois que o '
+                      'gabarito é lido.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -70,85 +205,38 @@ class CorrigirProvaScreen extends StatelessWidget {
       ),
     );
   }
-
-  /// Simula a leitura do QR Code do gabarito.
-  /// Sem câmera real ainda: usa a primeira matéria do mock como se
-  /// tivesse sido identificada a partir do QR Code escaneado.
-  void _lerQrCodeGabarito(BuildContext context) {
-    final Materia gabarito = listaMateria.first;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => GabaritoLidoScreen(materia: gabarito),
-      ),
-    );
-  }
-
-  /// Simula a leitura da folha de respostas do aluno.
-  /// Sem câmera real ainda: o professor escolhe o aluno entre os
-  /// cadastrados no Firestore, no lugar da identificação pela folha.
-  Future<void> _lerProvaAluno(BuildContext context) async {
-    final Aluno? aluno = await Navigator.push<Aluno>(
-      context,
-      MaterialPageRoute(builder: (_) => const SelecionarAlunoScreen()),
-    );
-
-    if (aluno == null || !context.mounted) return;
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProvaAlunoLidaScreen(aluno: aluno),
-      ),
-    );
-  }
 }
 
-/// Tela exibida após a simulação da leitura do QR Code do gabarito.
-class GabaritoLidoScreen extends StatelessWidget {
-  final Materia materia;
+/// Resumo da prova identificada pelo QR Code do gabarito.
+class _GabaritoLido extends StatelessWidget {
+  final Prova prova;
 
-  const GabaritoLidoScreen({super.key, required this.materia});
+  const _GabaritoLido({required this.prova});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Gabarito Lido'),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 60),
-                const SizedBox(height: 16),
-                Text(
-                  'Gabarito identificado com sucesso!',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 24),
-                Text('Matéria: ${materia.descricao}'),
-                const SizedBox(height: 8),
-                Text('Quantidade de questões: ${materia.questoes.length}'),
-              ],
-            ),
-          ),
+    return Card(
+      child: ListTile(
+        leading: const Icon(Icons.check_circle, color: Colors.green, size: 36),
+        title: Text(prova.titulo),
+        subtitle: Text(
+          'Gabarito lido · ${prova.questaoIds.length} questão(ões)',
         ),
       ),
     );
   }
 }
 
-/// Tela exibida após a simulação da leitura da prova do aluno.
+/// Tela exibida depois que a folha do aluno foi identificada.
 class ProvaAlunoLidaScreen extends StatelessWidget {
   final Aluno aluno;
+  final Prova prova;
 
-  const ProvaAlunoLidaScreen({super.key, required this.aluno});
+  const ProvaAlunoLidaScreen({
+    super.key,
+    required this.aluno,
+    required this.prova,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -171,10 +259,12 @@ class ProvaAlunoLidaScreen extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 const SizedBox(height: 24),
+                Text('Prova: ${prova.titulo}'),
+                const SizedBox(height: 8),
                 Text('Aluno: ${aluno.nome}'),
                 const SizedBox(height: 8),
                 Text('Matrícula: ${aluno.matricula}'),
-                
+
                 // --- BOTÃO ADICIONADO AQUI ---
                 const SizedBox(height: 40),
                 ElevatedButton.icon(
