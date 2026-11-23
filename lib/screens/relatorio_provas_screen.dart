@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/models/resultado_model.dart';
+import 'package:mobile/screens/estatisticas_prova_screen.dart';
+import 'package:mobile/services/exportacao_resultados_service.dart';
 import 'package:mobile/services/resultado_service.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
-import 'package:mobile/screens/estatisticas_prova_screen.dart';
 
 /// Lista as provas já corrigidas, lendo os resultados do Firestore
 /// (coleção `resultados`). A lista atualiza sozinha quando um resultado
@@ -16,8 +17,11 @@ class RelatorioProvasScreen extends StatefulWidget {
 
 class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
   final ResultadoService _resultadoService = ResultadoService();
+  final ExportacaoResultadosService _exportacaoService =
+      ExportacaoResultadosService();
 
   late Stream<List<Resultado>> _resultadosStream;
+  bool _exportando = false;
 
   @override
   void initState() {
@@ -30,6 +34,27 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
     setState(() {
       _resultadosStream = _resultadoService.listarTodos();
     });
+  }
+
+  Future<void> _exportarExcel(List<Resultado> resultados) async {
+    if (_exportando) return;
+
+    setState(() => _exportando = true);
+    try {
+      final arquivo = await _exportacaoService.salvarPlanilha(resultados);
+      if (!mounted || arquivo == null) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Planilha salva com sucesso.')),
+      );
+    } on ExportacaoResultadosException catch (erro) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(erro.mensagem)));
+    } finally {
+      if (mounted) setState(() => _exportando = false);
+    }
   }
 
   Color _corDaNota(double nota) {
@@ -75,7 +100,11 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 48,
+                      color: Colors.red,
+                    ),
                     const SizedBox(height: 12),
                     const Text(
                       'Não foi possível carregar as provas corrigidas.',
@@ -113,7 +142,11 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.assignment_outlined, size: 48, color: Colors.grey),
+                    Icon(
+                      Icons.assignment_outlined,
+                      size: 48,
+                      color: Colors.grey,
+                    ),
                     SizedBox(height: 12),
                     Text(
                       'Nenhuma prova corrigida ainda.',
@@ -134,56 +167,91 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 700),
-              child: ListView.builder(
-                padding: const EdgeInsets.all(16),
-                itemCount: resultados.length,
-                itemBuilder: (context, index) {
-                  final resultado = resultados[index];
-                  final Color corDaNota = _corDaNota(resultado.nota);
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: ElevatedButton.icon(
+                        onPressed: _exportando
+                            ? null
+                            : () => _exportarExcel(resultados),
+                        icon: _exportando
+                            ? const SizedBox.square(
+                                dimension: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.download),
+                        label: Text(
+                          _exportando ? 'Exportando…' : 'Exportar Excel',
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: resultados.length,
+                      itemBuilder: (context, index) {
+                        final resultado = resultados[index];
+                        final Color corDaNota = _corDaNota(resultado.nota);
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.all(12),
-                                            onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => EstatisticasProvaScreen(
-                              provaId: resultado.provaId,
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.all(12),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EstatisticasProvaScreen(
+                                    provaId: resultado.provaId,
+                                  ),
+                                ),
+                              );
+                            },
+                            trailing: const Icon(Icons.bar_chart),
+                            leading: CircleAvatar(
+                              backgroundColor: corDaNota.withValues(
+                                alpha: 0.15,
+                              ),
+                              child: Text(
+                                resultado.nota.toStringAsFixed(1),
+                                style: TextStyle(
+                                  color: corDaNota,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              resultado.alunoNome,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text('Matrícula: ${resultado.alunoMatricula}'),
+                                Text(
+                                  'Acertos: ${resultado.acertos}/${resultado.totalQuestoes}',
+                                ),
+                                Text(
+                                  'Data: ${_formatarData(resultado.corrigidoEm)}',
+                                ),
+                              ],
                             ),
                           ),
                         );
                       },
-                      trailing: const Icon(Icons.bar_chart),
-                      leading: CircleAvatar(
-                        backgroundColor: corDaNota.withValues(alpha: 0.15),
-                        child: Text(
-                          resultado.nota.toStringAsFixed(1),
-                          style: TextStyle(
-                            color: corDaNota,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      title: Text(
-                        resultado.alunoNome,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 4),
-                          Text('Matrícula: ${resultado.alunoMatricula}'),
-                          Text(
-                            'Acertos: ${resultado.acertos}/${resultado.totalQuestoes}',
-                          ),
-                          Text('Data: ${_formatarData(resultado.corrigidoEm)}'),
-                        ],
-                      ),
                     ),
-                  );
-                },
+                  ),
+                ],
               ),
             ),
           );
