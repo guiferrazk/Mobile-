@@ -49,6 +49,31 @@ void main() {
     expect(linhas[1][4]?.value, isNull);
   });
 
+  test('exporta todos os resultados na ordem da lista recebida', () {
+    final primeiro = _resultado(corrigidoEm: DateTime(2026, 11, 21));
+    final segundo = Resultado(
+      provaId: primeiro.provaId,
+      alunoId: 'aluno-2',
+      alunoNome: 'Ana Souza',
+      alunoMatricula: '000045',
+      respostas: {},
+      acertos: 1,
+      totalQuestoes: 3,
+      corrigidoEm: DateTime(2026, 11, 22),
+    );
+    final bytes = ExportacaoResultadosService().gerarPlanilha([
+      primeiro,
+      segundo,
+    ]);
+    final linhas = Excel.decodeBytes(bytes).tables.values.single.rows;
+
+    expect(linhas, hasLength(3));
+    expect(linhas.skip(1).map((linha) => [linha[0]?.value, linha[1]?.value]), [
+      [TextCellValue(primeiro.alunoNome), TextCellValue(primeiro.alunoMatricula)],
+      [TextCellValue(segundo.alunoNome), TextCellValue(segundo.alunoMatricula)],
+    ]);
+  });
+
   test('encaminha os bytes XLSX ao seletor e retorna o URI salvo', () async {
     final destino = Uri.parse('content://documentos/provas_corrigidas.xlsx');
     final servico = ExportacaoResultadosService(
