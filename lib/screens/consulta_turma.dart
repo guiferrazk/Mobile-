@@ -4,6 +4,7 @@ import 'package:mobile/screens/cadastro_turma.dart';
 import 'package:mobile/services/turma_service.dart';
 import 'package:mobile/theme/app_theme.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 class ConsultaTurmaScreen extends StatefulWidget {
   const ConsultaTurmaScreen({super.key});
@@ -39,7 +40,7 @@ class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppCores.erro),
             child: const Text('Excluir'),
           ),
         ],
@@ -56,7 +57,7 @@ class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
       } catch (e) {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao excluir turma: $e')),
+          SnackBar(content: Text('Não foi possível excluir a turma. ${MensagensErro.de(e)}')),
         );
       }
     }
@@ -98,7 +99,7 @@ class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
                       return Center(
-                        child: Text('Erro ao carregar turmas: ${snapshot.error}'),
+                        child: Text('Não foi possível carregar as turmas. ${MensagensErro.de(snapshot.error)}'),
                       );
                     }
 
@@ -144,12 +145,12 @@ class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  icon: const Icon(Icons.edit, color: AppCores.vinho),
                                   onPressed: () => _editarTurma(turma),
                                   tooltip: 'Editar',
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete, color: AppCores.erro),
                                   onPressed: () => _confirmarExclusao(turma),
                                   tooltip: 'Excluir',
                                 ),

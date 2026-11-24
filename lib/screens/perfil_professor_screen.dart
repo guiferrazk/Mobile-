@@ -3,6 +3,7 @@ import 'package:mobile/models/professor_model.dart';
 import 'package:mobile/screens/login_screen.dart';
 import 'package:mobile/services/auth_service.dart';
 import 'package:mobile/utils/formatadores.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 
 class PerfilProfessorScreen extends StatefulWidget {
@@ -46,7 +47,7 @@ class _PerfilProfessorScreenState extends State<PerfilProfessorScreen> {
       if (!mounted) return;
       setState(() => _carregando = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao carregar perfil: $e')),
+        SnackBar(content: Text('Não foi possível carregar o perfil. ${MensagensErro.de(e)}')),
       );
     }
   }
@@ -70,7 +71,7 @@ class _PerfilProfessorScreenState extends State<PerfilProfessorScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao atualizar: $e')),
+        SnackBar(content: Text('Não foi possível atualizar o perfil. ${MensagensErro.de(e)}')),
       );
     } finally {
       if (mounted) setState(() => _salvando = false);

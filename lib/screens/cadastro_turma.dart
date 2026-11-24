@@ -4,6 +4,8 @@ import 'package:mobile/models/turma_model.dart';
 import 'package:mobile/services/aluno_service.dart';
 import 'package:mobile/services/turma_service.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/theme/app_theme.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 class CadastroTurmaScreen extends StatefulWidget {
   final Turma? turma;
@@ -70,7 +72,7 @@ class _CadastroTurmaScreenState extends State<CadastroTurmaScreen> {
     } on TurmaServiceException catch (e) {
       _mostrarErro(e.mensagem);
     } catch (e) {
-      _mostrarErro('Não foi possível salvar a turma: $e');
+      _mostrarErro('Não foi possível salvar a turma. ${MensagensErro.de(e)}');
     } finally {
       if (mounted) {
         setState(() => _salvando = false);
@@ -133,13 +135,13 @@ class _CadastroTurmaScreenState extends State<CadastroTurmaScreen> {
                       if (todosAlunos.isEmpty) {
                         return const Text(
                           'Nenhum aluno cadastrado no sistema.',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(color: AppCores.textoSuave),
                         );
                       }
 
                       return Container(
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade400),
+                          border: Border.all(color: AppCores.borda),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: ListView.separated(

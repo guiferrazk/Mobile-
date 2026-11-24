@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/theme/app_theme.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
@@ -68,7 +70,7 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
       await _questaoService.excluir(questao.id);
       _mostrarMensagem('Questão excluída.');
     } catch (e) {
-      _mostrarMensagem('Não foi possível excluir: $e');
+      _mostrarMensagem('Não foi possível excluir a questão. ${MensagensErro.de(e)}');
     }
   }
 
@@ -93,7 +95,7 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
               padding: const EdgeInsets.all(24.0),
               child: Center(
                 child: Text(
-                  'Erro ao carregar questões:\n${snapshot.error}',
+                  'Não foi possível carregar as questões.\n${MensagensErro.de(snapshot.error)}',
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -125,8 +127,8 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
                               ? Icons.check_circle
                               : Icons.radio_button_unchecked,
                           color: alternativa.isCorreta
-                              ? Colors.green
-                              : Colors.grey,
+                              ? AppCores.sucesso
+                              : AppCores.textoSuave,
                         ),
                         title: Text(alternativa.texto),
                       ),
@@ -270,7 +272,7 @@ class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível salvar a questão: $e')),
+        SnackBar(content: Text('Não foi possível salvar a questão. ${MensagensErro.de(e)}')),
       );
     } finally {
       if (mounted) {
@@ -337,7 +339,7 @@ class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
                   const Text(
                     'Selecione o botão à esquerda para marcar a '
                         'alternativa correta.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: AppCores.textoSuave),
                   ),
                   const SizedBox(height: 8),
                   for (var i = 0; i < _alternativasControllers.length; i++)

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/theme/app_theme.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 import '../models/aluno_model.dart';
 import '../models/prova_model.dart';
@@ -50,7 +52,7 @@ class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
     } on LeituraQrCodeException catch (e) {
       _mostrarMensagem(e.mensagem);
     } catch (e) {
-      _mostrarMensagem('Não foi possível buscar a prova: $e');
+      _mostrarMensagem('Não foi possível buscar a prova. ${MensagensErro.de(e)}');
     } finally {
       if (mounted) setState(() => _buscando = false);
     }
@@ -84,7 +86,7 @@ class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
     } on LeituraQrCodeException catch (e) {
       _mostrarMensagem(e.mensagem);
     } catch (e) {
-      _mostrarMensagem('Não foi possível buscar o aluno: $e');
+      _mostrarMensagem('Não foi possível buscar o aluno. ${MensagensErro.de(e)}');
     } finally {
       if (mounted) setState(() => _buscando = false);
     }
@@ -143,7 +145,7 @@ class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
                 const Icon(
                   Icons.qr_code_scanner,
                   size: 80,
-                  color: Colors.grey,
+                  color: AppCores.textoSuave,
                 ),
                 const SizedBox(height: 32),
                 const Text(
@@ -195,7 +197,7 @@ class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
                       'A leitura da prova do aluno é liberada depois que o '
                       'gabarito é lido.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: AppCores.textoSuave),
                     ),
                   ),
               ],
@@ -217,7 +219,7 @@ class _GabaritoLido extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: const Icon(Icons.check_circle, color: Colors.green, size: 36),
+        leading: const Icon(Icons.check_circle, color: AppCores.sucesso, size: 36),
         title: Text(prova.titulo),
         subtitle: Text(
           'Gabarito lido · ${prova.questaoIds.length} questão(ões)',
@@ -252,7 +254,7 @@ class ProvaAlunoLidaScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.check_circle, color: Colors.green, size: 60),
+                const Icon(Icons.check_circle, color: AppCores.sucesso, size: 60),
                 const SizedBox(height: 16),
                 Text(
                   'Prova identificada com sucesso!',
