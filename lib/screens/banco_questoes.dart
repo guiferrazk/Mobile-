@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/theme/app_theme.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
@@ -125,8 +126,8 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
                               ? Icons.check_circle
                               : Icons.radio_button_unchecked,
                           color: alternativa.isCorreta
-                              ? Colors.green
-                              : Colors.grey,
+                              ? AppCores.sucesso
+                              : AppCores.textoSuave,
                         ),
                         title: Text(alternativa.texto),
                       ),
@@ -337,7 +338,7 @@ class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
                   const Text(
                     'Selecione o botão à esquerda para marcar a '
                         'alternativa correta.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: AppCores.textoSuave),
                   ),
                   const SizedBox(height: 8),
                   for (var i = 0; i < _alternativasControllers.length; i++)

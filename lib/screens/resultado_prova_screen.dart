@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_screen.dart'; // Importação adicionada para a Home
+import 'package:mobile/theme/app_theme.dart';
 
 class ResultadoProvaScreen extends StatelessWidget {
   // 1. Dados fixos (mockados) para simular o resultado
@@ -9,11 +10,11 @@ class ResultadoProvaScreen extends StatelessWidget {
 
   // Lista simulando quais questões o aluno acertou/errou
   final List<Map<String, dynamic>> resultadoQuestoes = [
-    {'questao': 1, 'status': 'Correta', 'cor': Colors.green, 'icone': Icons.check_circle},
-    {'questao': 2, 'status': 'Correta', 'cor': Colors.green, 'icone': Icons.check_circle},
-    {'questao': 3, 'status': 'Incorreta', 'cor': Colors.red, 'icone': Icons.cancel},
-    {'questao': 4, 'status': 'Correta', 'cor': Colors.green, 'icone': Icons.check_circle},
-    {'questao': 5, 'status': 'Correta', 'cor': Colors.green, 'icone': Icons.check_circle},
+    {'questao': 1, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
+    {'questao': 2, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
+    {'questao': 3, 'status': 'Incorreta', 'cor': AppCores.erro, 'icone': Icons.cancel},
+    {'questao': 4, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
+    {'questao': 5, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
   ];
 
   ResultadoProvaScreen({super.key});
@@ -50,13 +51,13 @@ class ResultadoProvaScreen extends StatelessWidget {
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
                         // Muda a cor da nota dependendo se foi bem ou mal
-                        color: notaFinal >= 6.0 ? Colors.green : Colors.red,
+                        color: notaFinal >= 6.0 ? AppCores.sucesso : AppCores.erro,
                       ),
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Acertos: $totalAcertos de $totalQuestoes',
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                      style: const TextStyle(fontSize: 16, color: AppCores.textoSuave),
                     ),
                   ],
                 ),

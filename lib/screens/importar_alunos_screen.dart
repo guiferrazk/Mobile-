@@ -1,6 +1,7 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/theme/app_theme.dart';
 
 import 'package:mobile/services/aluno_service.dart';
 import 'package:mobile/services/importacao_alunos.dart';
@@ -121,7 +122,7 @@ class _ImportarAlunosScreenState extends State<ImportarAlunosScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Icon(Icons.table_view_outlined, size: 72, color: Colors.grey),
+          const Icon(Icons.table_view_outlined, size: 72, color: AppCores.textoSuave),
           const SizedBox(height: 24),
           const Text(
             'Escolha uma planilha do Excel (.xlsx) ou um arquivo .csv '
@@ -233,7 +234,7 @@ class _LinhaPrevia extends StatelessWidget {
       child: ListTile(
         leading: Icon(
           linha.valida ? Icons.check_circle_outline : Icons.error_outline,
-          color: linha.valida ? Colors.green : corErro,
+          color: linha.valida ? AppCores.sucesso : corErro,
         ),
         title: Text(linha.nome.isEmpty ? '(sem nome)' : linha.nome),
         subtitle: Column(

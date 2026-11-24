@@ -39,7 +39,7 @@ class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: AppCores.erro),
             child: const Text('Excluir'),
           ),
         ],
@@ -144,12 +144,12 @@ class _ConsultaTurmaScreenState extends State<ConsultaTurmaScreen> {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.edit, color: Colors.blue),
+                                  icon: const Icon(Icons.edit, color: AppCores.vinho),
                                   onPressed: () => _editarTurma(turma),
                                   tooltip: 'Editar',
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.delete, color: Colors.red),
+                                  icon: const Icon(Icons.delete, color: AppCores.erro),
                                   onPressed: () => _confirmarExclusao(turma),
                                   tooltip: 'Excluir',
                                 ),

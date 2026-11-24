@@ -4,6 +4,7 @@ import 'package:mobile/screens/estatisticas_prova_screen.dart';
 import 'package:mobile/services/exportacao_resultados_service.dart';
 import 'package:mobile/services/resultado_service.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/theme/app_theme.dart';
 
 /// Lista as provas já corrigidas, lendo os resultados do Firestore
 /// (coleção `resultados`). A lista atualiza sozinha quando um resultado
@@ -59,11 +60,11 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
 
   Color _corDaNota(double nota) {
     if (nota >= 7) {
-      return Colors.green;
+      return AppCores.sucesso;
     } else if (nota >= 5) {
-      return Colors.orange;
+      return AppCores.alerta;
     } else {
-      return Colors.red;
+      return AppCores.erro;
     }
   }
 
@@ -103,7 +104,7 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
                     const Icon(
                       Icons.error_outline,
                       size: 48,
-                      color: Colors.red,
+                      color: AppCores.erro,
                     ),
                     const SizedBox(height: 12),
                     const Text(
@@ -145,7 +146,7 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
                     Icon(
                       Icons.assignment_outlined,
                       size: 48,
-                      color: Colors.grey,
+                      color: AppCores.textoSuave,
                     ),
                     SizedBox(height: 12),
                     Text(

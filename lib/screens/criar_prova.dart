@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mobile/theme/app_theme.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
@@ -384,7 +385,7 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
                         children: [
                           const Icon(
                             Icons.check_circle,
-                            color: Colors.green,
+                            color: AppCores.sucesso,
                           ),
                           const SizedBox(width: 12),
 

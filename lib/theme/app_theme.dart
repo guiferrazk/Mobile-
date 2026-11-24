@@ -11,6 +11,11 @@ class AppCores {
   static const Color texto = Color(0xFF2A1D21);
   static const Color textoSuave = Color(0xFF75666B);
   static const Color erro = Color(0xFFB3261E);
+
+  // Cores de status (acerto, nota média, erro), em tons que combinam com o
+  // vinho e continuam legíveis sobre o fundo claro.
+  static const Color sucesso = Color(0xFF2E7D32);
+  static const Color alerta = Color(0xFFB26A00);
 }
 
 class AppTheme {

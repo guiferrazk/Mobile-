@@ -6,6 +6,7 @@ import 'package:mobile/services/prova_service.dart';
 import 'package:mobile/services/questao_service.dart';
 import 'package:mobile/services/resultado_service.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/theme/app_theme.dart';
 
 /// Dados necessários para montar as estatísticas de uma prova.
 class _DadosEstatisticas {
@@ -143,7 +144,7 @@ class _EstatisticasProvaScreenState extends State<EstatisticasProvaScreen> {
     required bool correta,
   }) {
     final double proporcao = total == 0 ? 0 : quantidade / total;
-    final Color cor = correta ? Colors.green : Colors.deepPurple;
+    final Color cor = correta ? AppCores.sucesso : AppCores.vinho;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -163,7 +164,7 @@ class _EstatisticasProvaScreenState extends State<EstatisticasProvaScreen> {
               if (correta)
                 const Padding(
                   padding: EdgeInsets.only(left: 4),
-                  child: Icon(Icons.check_circle, size: 18, color: Colors.green),
+                  child: Icon(Icons.check_circle, size: 18, color: AppCores.sucesso),
                 ),
               const SizedBox(width: 8),
               Text('$quantidade (${(proporcao * 100).round()}%)'),
@@ -251,7 +252,7 @@ class _EstatisticasProvaScreenState extends State<EstatisticasProvaScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                    const Icon(Icons.error_outline, size: 48, color: AppCores.erro),
                     const SizedBox(height: 12),
                     const Text(
                       'Não foi possível carregar as estatísticas.',
@@ -275,14 +276,14 @@ class _EstatisticasProvaScreenState extends State<EstatisticasProvaScreen> {
           if (dados.resultados.isEmpty) {
             return _mensagem(
               Icons.assignment_outlined,
-              Colors.grey,
+              AppCores.textoSuave,
               'Esta prova ainda não tem resultados.',
             );
           }
           if (dados.questoes.isEmpty) {
             return _mensagem(
               Icons.help_outline,
-              Colors.grey,
+              AppCores.textoSuave,
               'Esta prova não tem questões cadastradas.',
             );
           }
