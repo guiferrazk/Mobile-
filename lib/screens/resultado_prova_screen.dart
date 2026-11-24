@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
-import 'home_screen.dart'; // Importação adicionada para a Home
+import 'home_screen.dart';
 import 'package:mobile/theme/app_theme.dart';
 
+import '../models/questao_model.dart';
+import '../models/resultado_model.dart';
+
+/// Mostra o resultado de uma correção: nota, acertos e, para cada
+/// questão, se o aluno acertou, errou ou deixou em branco.
+///
+/// [questoes] deve ser a lista original (não embaralhada) usada para
+/// corrigir o [resultado], na mesma ordem do gabarito da prova.
 class ResultadoProvaScreen extends StatelessWidget {
-  // 1. Dados fixos (mockados) para simular o resultado
-  final double notaFinal = 8.0;
-  final int totalAcertos = 4;
-  final int totalQuestoes = 5;
+  final Resultado resultado;
+  final List<Questao> questoes;
 
-  // Lista simulando quais questões o aluno acertou/errou
-  final List<Map<String, dynamic>> resultadoQuestoes = [
-    {'questao': 1, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
-    {'questao': 2, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
-    {'questao': 3, 'status': 'Incorreta', 'cor': AppCores.erro, 'icone': Icons.cancel},
-    {'questao': 4, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
-    {'questao': 5, 'status': 'Correta', 'cor': AppCores.sucesso, 'icone': Icons.check_circle},
-  ];
-
-  ResultadoProvaScreen({super.key});
+  const ResultadoProvaScreen({
+    super.key,
+    required this.resultado,
+    required this.questoes,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final nota = resultado.nota;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resultado da Correção'),
@@ -30,7 +33,6 @@ class ResultadoProvaScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 2. Card de Destaque para a Nota Final
             Card(
               elevation: 4,
               shape: RoundedRectangleBorder(
@@ -40,75 +42,85 @@ class ResultadoProvaScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(24.0),
                 child: Column(
                   children: [
+                    Text(
+                      resultado.alunoNome,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
                     const Text(
                       'Nota Final',
                       style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      notaFinal.toStringAsFixed(1), // Mostra "8.0"
+                      nota.toStringAsFixed(1),
                       style: TextStyle(
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
-                        // Muda a cor da nota dependendo se foi bem ou mal
-                        color: notaFinal >= 6.0 ? AppCores.sucesso : AppCores.erro,
+                        color: nota >= 6.0 ? AppCores.sucesso : AppCores.erro,
                       ),
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Acertos: $totalAcertos de $totalQuestoes',
+                      'Acertos: ${resultado.acertos} de ${resultado.totalQuestoes}',
                       style: const TextStyle(fontSize: 16, color: AppCores.textoSuave),
                     ),
                   ],
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 24),
-            
+
             const Text(
               'Detalhes das Questões',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
-            
-            // 3. Lista (ListView) rolável mostrando as questões
+
             Expanded(
               child: ListView.builder(
-                itemCount: resultadoQuestoes.length,
+                itemCount: questoes.length,
                 itemBuilder: (context, index) {
-                  final item = resultadoQuestoes[index];
+                  final questao = questoes[index];
+                  final indiceCorreto =
+                      questao.alternativas.indexWhere((a) => a.isCorreta);
+                  final marcada = resultado.respostas[questao.id];
+
+                  final acertou = marcada != null && marcada == indiceCorreto;
+                  final status = marcada == null
+                      ? 'Em branco'
+                      : (acertou ? 'Correta' : 'Incorreta');
+                  final cor = marcada == null
+                      ? AppCores.textoSuave
+                      : (acertou ? AppCores.sucesso : AppCores.erro);
+                  final icone = marcada == null
+                      ? Icons.remove_circle_outline
+                      : (acertou ? Icons.check_circle : Icons.cancel);
+
                   return Card(
                     margin: const EdgeInsets.only(bottom: 8),
                     child: ListTile(
-                      leading: Icon(
-                        item['icone'],
-                        color: item['cor'],
-                        size: 32,
-                      ),
+                      leading: Icon(icone, color: cor, size: 32),
                       title: Text(
-                        'Questão ${item['questao']}',
+                        'Questão ${index + 1}',
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       subtitle: Text(
-                        item['status'],
-                        style: TextStyle(
-                          color: item['cor'],
-                          fontWeight: FontWeight.w600,
-                        ),
+                        status,
+                        style: TextStyle(color: cor, fontWeight: FontWeight.w600),
                       ),
                     ),
                   );
                 },
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
-            // 4. Botão para voltar à tela principal (Home)
+
             ElevatedButton(
               onPressed: () {
-                // Apaga todo o histórico de telas e joga para a HomeScreen
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (context) => const HomeScreen()),

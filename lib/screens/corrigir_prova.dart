@@ -6,8 +6,8 @@ import 'package:mobile/utils/mensagens_erro.dart';
 import '../models/aluno_model.dart';
 import '../models/prova_model.dart';
 import '../services/localizador_prova.dart';
+import 'corrigir_respostas_screen.dart';
 import 'leitor_qrcode_screen.dart';
-import 'resultado_prova_screen.dart';
 import 'selecionar_aluno_screen.dart';
 
 
@@ -269,20 +269,21 @@ class ProvaAlunoLidaScreen extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text('Matrícula: ${aluno.matricula}'),
 
-                // --- BOTÃO ADICIONADO AQUI ---
                 const SizedBox(height: 40),
                 ElevatedButton.icon(
                   onPressed: () {
-                    // Navega para a tela de resultado que você criou
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ResultadoProvaScreen(),
+                        builder: (context) => CorrigirRespostasScreen(
+                          aluno: aluno,
+                          prova: prova,
+                        ),
                       ),
                     );
                   },
-                  icon: const Icon(Icons.analytics),
-                  label: const Text('Ver Resultado da Correção'),
+                  icon: const Icon(Icons.fact_check_outlined),
+                  label: const Text('Marcar Respostas'),
                   style: ElevatedButton.styleFrom(
                     minimumSize: const Size(double.infinity, 50),
                   ),

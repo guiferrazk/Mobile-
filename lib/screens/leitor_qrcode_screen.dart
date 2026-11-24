@@ -75,7 +75,7 @@ class _LeitorQrCodeScreenState extends State<LeitorQrCodeScreen> {
             labelText: widget.rotuloCodigo,
             border: const OutlineInputBorder(),
           ),
-          onSubmitted: (valor) => Navigator.pop(context, valor),
+          onSubmitted: (valor) => Future.microtask(() => Navigator.pop(context, valor)),
         ),
         actions: [
           TextButton(

@@ -3,17 +3,17 @@ import 'package:mobile/widgets/titulo_pagina.dart';
 import 'package:mobile/theme/app_theme.dart';
 import 'package:mobile/utils/mensagens_erro.dart';
 
-import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
 import 'package:mobile/models/materia_model.dart';
 import 'package:mobile/models/questao_model.dart';
+import 'package:mobile/services/materia_service.dart';
 import 'package:mobile/services/questao_service.dart';
 
 /// Tela que lista as questões cadastradas no Firestore.
 ///
 /// Cada questão pode ser editada ou excluída. O botão "Adicionar questão"
-/// abre o formulário de cadastro. As matérias ainda vêm do mock
-/// [listaMateria].
+/// abre o formulário de cadastro. As matérias vêm da coleção `materias`
+/// no Firestore ([MateriaService]).
 class BancoQuestoesScreen extends StatefulWidget {
   const BancoQuestoesScreen({super.key});
 
@@ -23,10 +23,14 @@ class BancoQuestoesScreen extends StatefulWidget {
 
 class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
   final _questaoService = QuestaoService();
+  final _materiaService = MateriaService();
+
+  late final Stream<List<Questao>> _questoesStream = _questaoService.listar();
+  late final Stream<List<Materia>> _materiasStream = _materiaService.listar();
 
   /// Descobre o nome da matéria a partir do id guardado na questão.
-  String _nomeMateria(String? materiaId) {
-    for (final materia in listaMateria) {
+  String _nomeMateria(String? materiaId, List<Materia> materias) {
+    for (final materia in materias) {
       if (materia.id == materiaId) return materia.descricao;
     }
     return 'Sem matéria';
@@ -87,71 +91,78 @@ class _BancoQuestoesScreenState extends State<BancoQuestoesScreen> {
       appBar: AppBar(
         title: const TituloPagina(icone: Icons.quiz_outlined, texto: 'Banco de Questões'),
       ),
-      body: StreamBuilder<List<Questao>>(
-        stream: _questaoService.listar(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Center(
-                child: Text(
-                  'Não foi possível carregar as questões.\n${MensagensErro.de(snapshot.error)}',
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
+      body: StreamBuilder<List<Materia>>(
+        stream: _materiasStream,
+        builder: (context, materiaSnapshot) {
+          final materias = materiaSnapshot.data ?? const <Materia>[];
 
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final questoes = snapshot.data!;
-
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
-            itemCount: questoes.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final questao = questoes[index];
-
-              return Card(
-                child: ExpansionTile(
-                  title: Text(questao.enunciado),
-                  subtitle: Text(_nomeMateria(questao.materiaId)),
-                  children: [
-                    for (final alternativa in questao.alternativas)
-                      ListTile(
-                        leading: Icon(
-                          alternativa.isCorreta
-                              ? Icons.check_circle
-                              : Icons.radio_button_unchecked,
-                          color: alternativa.isCorreta
-                              ? AppCores.sucesso
-                              : AppCores.textoSuave,
-                        ),
-                        title: Text(alternativa.texto),
-                      ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () => _abrirFormulario(questao),
-                            icon: const Icon(Icons.edit_outlined),
-                            label: const Text('Editar'),
-                          ),
-                          TextButton.icon(
-                            onPressed: () => _confirmarExclusao(questao),
-                            icon: const Icon(Icons.delete_outline),
-                            label: const Text('Excluir'),
-                          ),
-                        ],
-                      ),
+          return StreamBuilder<List<Questao>>(
+            stream: _questoesStream,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Center(
+                    child: Text(
+                      'Não foi possível carregar as questões.\n${MensagensErro.de(snapshot.error)}',
+                      textAlign: TextAlign.center,
                     ),
-                  ],
-                ),
+                  ),
+                );
+              }
+
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final questoes = snapshot.data!;
+
+              return ListView.separated(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
+                itemCount: questoes.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final questao = questoes[index];
+
+                  return Card(
+                    child: ExpansionTile(
+                      title: Text(questao.enunciado),
+                      subtitle: Text(_nomeMateria(questao.materiaId, materias)),
+                      children: [
+                        for (final alternativa in questao.alternativas)
+                          ListTile(
+                            leading: Icon(
+                              alternativa.isCorreta
+                                  ? Icons.check_circle
+                                  : Icons.radio_button_unchecked,
+                              color: alternativa.isCorreta
+                                  ? AppCores.sucesso
+                                  : AppCores.textoSuave,
+                            ),
+                            title: Text(alternativa.texto),
+                          ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              TextButton.icon(
+                                onPressed: () => _abrirFormulario(questao),
+                                icon: const Icon(Icons.edit_outlined),
+                                label: const Text('Editar'),
+                              ),
+                              TextButton.icon(
+                                onPressed: () => _confirmarExclusao(questao),
+                                icon: const Icon(Icons.delete_outline),
+                                label: const Text('Excluir'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           );
@@ -183,11 +194,14 @@ class AdicionarQuestaoScreen extends StatefulWidget {
 class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
   final _formKey = GlobalKey<FormState>();
   final _questaoService = QuestaoService();
+  final _materiaService = MateriaService();
+
+  late final Stream<List<Materia>> _materiasStream = _materiaService.listar();
 
   late final TextEditingController _enunciadoController;
   late final List<TextEditingController> _alternativasControllers;
 
-  Materia? _materiaSelecionada;
+  String? _materiaIdSelecionada;
   int _alternativaCorretaIndex = 0;
   bool _salvando = false;
 
@@ -209,17 +223,11 @@ class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
         .map((a) => TextEditingController(text: a.texto))
         .toList();
 
+    _materiaIdSelecionada = questao?.materiaId;
+
     if (questao != null) {
       final indiceCorreta = questao.alternativas.indexWhere((a) => a.isCorreta);
       _alternativaCorretaIndex = indiceCorreta >= 0 ? indiceCorreta : 0;
-
-      // Procura na lista de matérias a que corresponde ao id salvo.
-      for (final materia in listaMateria) {
-        if (materia.id == questao.materiaId) {
-          _materiaSelecionada = materia;
-          break;
-        }
-      }
     }
   }
 
@@ -242,7 +250,7 @@ class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
     final questao = Questao(
       id: widget.questao?.id ?? '',
       enunciado: _enunciadoController.text.trim(),
-      materiaId: _materiaSelecionada!.id,
+      materiaId: _materiaIdSelecionada!,
       alternativas: [
         for (var i = 0; i < _alternativasControllers.length; i++)
           Alternativa(
@@ -281,6 +289,58 @@ class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
     }
   }
 
+  /// Abre um formulário simples para cadastrar uma nova matéria sem sair
+  /// desta tela. Ao salvar, a matéria recém-criada já fica selecionada.
+  ///
+  /// O texto fica em uma variável, sem TextEditingController: o diálogo
+  /// continua na tela durante a animação de saída, e descartar o controller
+  /// nesse momento causava a tela vermelha.
+  Future<void> _abrirNovaMateria() async {
+    var digitado = '';
+
+    final descricao = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Nova matéria'),
+        content: TextField(
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Descrição',
+            border: OutlineInputBorder(),
+          ),
+          onChanged: (valor) => digitado = valor,
+          onSubmitted: (valor) => Navigator.pop(dialogContext, valor),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, digitado),
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+
+    final texto = descricao?.trim();
+    if (texto == null || texto.isEmpty || !mounted) return;
+
+    try {
+      final id = await _materiaService.cadastrar(
+        Materia(id: '', descricao: texto),
+      );
+      if (!mounted) return;
+      setState(() => _materiaIdSelecionada = id);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Não foi possível cadastrar a matéria. ${MensagensErro.de(e)}')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -297,25 +357,59 @@ class _AdicionarQuestaoScreenState extends State<AdicionarQuestaoScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  DropdownButtonFormField<Materia>(
-                    initialValue: _materiaSelecionada,
-                    decoration: const InputDecoration(
-                      labelText: 'Matéria',
-                      border: OutlineInputBorder(),
-                    ),
-                    items: listaMateria
-                        .map(
-                          (materia) => DropdownMenuItem(
-                        value: materia,
-                        child: Text(materia.descricao),
-                      ),
-                    )
-                        .toList(),
-                    onChanged: (materia) {
-                      setState(() => _materiaSelecionada = materia);
+                  StreamBuilder<List<Materia>>(
+                    stream: _materiasStream,
+                    builder: (context, snapshot) {
+                      final materias = snapshot.data ?? const <Materia>[];
+
+                      // Se a questão foi salva com uma matéria que não
+                      // existe mais na lista, mantém o id selecionado e
+                      // mostra um item avulso para o Dropdown não quebrar.
+                      final itens = [
+                        for (final materia in materias)
+                          DropdownMenuItem(
+                            value: materia.id,
+                            child: Text(materia.descricao),
+                          ),
+                        if (_materiaIdSelecionada != null &&
+                            materias.every((m) => m.id != _materiaIdSelecionada))
+                          DropdownMenuItem(
+                            value: _materiaIdSelecionada,
+                            child: const Text('Matéria não encontrada'),
+                          ),
+                      ];
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: DropdownButtonFormField<String>(
+                              // initialValue só vale na criação do campo; a
+                              // chave recria o campo quando a matéria muda
+                              // por fora (ex.: matéria recém-cadastrada).
+                              key: ValueKey(_materiaIdSelecionada),
+                              initialValue: _materiaIdSelecionada,
+                              decoration: const InputDecoration(
+                                labelText: 'Matéria',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: itens,
+                              onChanged: (id) {
+                                setState(() => _materiaIdSelecionada = id);
+                              },
+                              validator: (id) =>
+                                  id == null ? 'Selecione uma matéria' : null,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          IconButton.filledTonal(
+                            onPressed: _abrirNovaMateria,
+                            icon: const Icon(Icons.add),
+                            tooltip: 'Nova matéria',
+                          ),
+                        ],
+                      );
                     },
-                    validator: (materia) =>
-                    materia == null ? 'Selecione uma matéria' : null,
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
