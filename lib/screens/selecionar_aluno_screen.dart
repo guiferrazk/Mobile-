@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/services/aluno_service.dart';
@@ -67,7 +68,7 @@ class _SelecionarAlunoScreenState extends State<SelecionarAlunoScreen> {
                         padding: const EdgeInsets.all(24.0),
                         child: Center(
                           child: Text(
-                            'Erro ao carregar alunos:\n${snapshot.error}',
+                            'Não foi possível carregar os alunos.\n${MensagensErro.de(snapshot.error)}',
                             textAlign: TextAlign.center,
                           ),
                         ),

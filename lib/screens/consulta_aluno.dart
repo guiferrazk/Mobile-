@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/services/aluno_service.dart';
@@ -62,7 +63,7 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
       await _alunoService.excluir(aluno.id);
       _mostrarMensagem('Aluno excluído.');
     } catch (e) {
-      _mostrarMensagem('Não foi possível excluir: $e');
+      _mostrarMensagem('Não foi possível excluir o aluno. ${MensagensErro.de(e)}');
     }
   }
 
@@ -114,7 +115,7 @@ class _ConsultaAlunoScreenState extends State<ConsultaAlunoScreen> {
                         padding: const EdgeInsets.all(24.0),
                         child: Center(
                           child: Text(
-                            'Erro ao carregar alunos:\n${snapshot.error}',
+                            'Não foi possível carregar os alunos.\n${MensagensErro.de(snapshot.error)}',
                             textAlign: TextAlign.center,
                           ),
                         ),
