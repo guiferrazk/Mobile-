@@ -9,14 +9,17 @@ import 'package:mobile/widgets/titulo_pagina.dart';
 /// (coleção `resultados`). A lista atualiza sozinha quando um resultado
 /// novo é salvo.
 class RelatorioProvasScreen extends StatefulWidget {
-  const RelatorioProvasScreen({super.key});
+  const RelatorioProvasScreen({super.key, this.listarResultados});
+
+  final Stream<List<Resultado>> Function()? listarResultados;
 
   @override
   State<RelatorioProvasScreen> createState() => _RelatorioProvasScreenState();
 }
 
 class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
-  final ResultadoService _resultadoService = ResultadoService();
+  late final Stream<List<Resultado>> Function() _listarResultados =
+      widget.listarResultados ?? ResultadoService().listarTodos;
   final ExportacaoResultadosService _exportacaoService =
       ExportacaoResultadosService();
 
@@ -26,13 +29,13 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
   @override
   void initState() {
     super.initState();
-    _resultadosStream = _resultadoService.listarTodos();
+    _resultadosStream = _listarResultados();
   }
 
   // Cria o stream de novo. Usado no botão "Tentar novamente".
   void _recarregar() {
     setState(() {
-      _resultadosStream = _resultadoService.listarTodos();
+      _resultadosStream = _listarResultados();
     });
   }
 
