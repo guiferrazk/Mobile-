@@ -3,6 +3,7 @@ import 'package:mobile/screens/cadastro_professor_screen.dart';
 import 'package:mobile/screens/home_screen.dart';
 import 'package:mobile/services/auth_service.dart';
 import 'package:mobile/theme/app_theme.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -48,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro de autenticação: $e')),
+        SnackBar(content: Text('Não foi possível entrar. ${MensagensErro.de(e)}')),
       );
     } finally {
       if (mounted) setState(() => _carregando = false);

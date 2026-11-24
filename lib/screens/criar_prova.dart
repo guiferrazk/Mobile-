@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:mobile/theme/app_theme.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
@@ -166,7 +167,7 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
       // Mensagem caso o Firebase apresente algum erro.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro ao salvar prova: $erro'),
+          content: Text('Não foi possível salvar a prova. ${MensagensErro.de(erro)}'),
         ),
       );
     } finally {
@@ -271,7 +272,7 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
                         if (snapshot.hasError) {
                           return Center(
                             child: Text(
-                              'Erro ao carregar questões:\n${snapshot.error}',
+                              'Não foi possível carregar as questões.\n${MensagensErro.de(snapshot.error)}',
                               textAlign: TextAlign.center,
                             ),
                           );

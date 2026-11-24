@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/services/auth_service.dart';
 import 'package:mobile/utils/formatadores.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 class CadastroProfessorScreen extends StatefulWidget {
   const CadastroProfessorScreen({super.key});
@@ -56,7 +57,7 @@ class _CadastroProfessorScreenState extends State<CadastroProfessorScreen> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao criar conta: $e')),
+        SnackBar(content: Text('Não foi possível criar a conta. ${MensagensErro.de(e)}')),
       );
     } finally {
       if (mounted) setState(() => _carregando = false);

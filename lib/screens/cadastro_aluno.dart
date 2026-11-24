@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/services/aluno_service.dart';
@@ -77,7 +78,7 @@ class _CadastroAlunoScreenState extends State<CadastroAlunoScreen> {
     } on AlunoServiceException catch (e) {
       _mostrarErro(e.mensagem);
     } catch (e) {
-      _mostrarErro('Não foi possível salvar o aluno: $e');
+      _mostrarErro('Não foi possível salvar o aluno. ${MensagensErro.de(e)}');
     } finally {
       if (mounted) {
         setState(() => _salvando = false);

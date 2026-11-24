@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 
 import 'package:mobile/models/prova_model.dart';
 import 'package:mobile/models/questao_model.dart';
@@ -45,7 +46,7 @@ class _ConsultarProvasScreenState
           if (snapshot.hasError) {
             return Center(
               child: Text(
-                'Erro ao carregar provas:\n${snapshot.error}',
+                'Não foi possível carregar as provas.\n${MensagensErro.de(snapshot.error)}',
                 textAlign: TextAlign.center,
               ),
             );
@@ -198,7 +199,7 @@ class _EditarProvaDialogState
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erro ao atualizar prova: $erro'),
+          content: Text('Não foi possível atualizar a prova. ${MensagensErro.de(erro)}'),
         ),
       );
     } finally {
