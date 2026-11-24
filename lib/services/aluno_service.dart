@@ -34,6 +34,20 @@ class AlunoService {
     return Aluno.fromMap(documento.id, dados);
   }
 
+  Future<Aluno?> buscarPorMatricula(String matricula) async {
+    final resultado = await _colecao
+        .where('matricula', isEqualTo: matricula)
+        .limit(1)
+        .get();
+
+    if (resultado.docs.isEmpty) {
+      return null;
+    }
+
+    final doc = resultado.docs.first;
+    return Aluno.fromMap(doc.id, doc.data());
+  }
+
   Future<void> cadastrar(Aluno aluno) async {
     await _validarMatriculaUnica(aluno.matricula);
     await _colecao.add(aluno.toMap());

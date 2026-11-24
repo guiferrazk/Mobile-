@@ -3,6 +3,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile/screens/leitor_qrcode_screen.dart';
 
 void main() {
+  testWidgets('mostra a instrução e um único botão de digitar', (tester) async {
+    await tester.pumpWidget(const MaterialApp(
+      home: LeitorQrCodeScreen(
+        titulo: 'Ler Gabarito',
+        instrucao: 'Aponte a câmera para o QR Code do gabarito.',
+      ),
+    ));
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(find.text('Aponte a câmera para o QR Code do gabarito.'), findsOneWidget);
+    expect(find.text('Digitar código'), findsOneWidget);
+  });
+
   // Sem câmera no ambiente de teste, o caminho testado é o de digitar o
   // código, que é o mesmo usado quando a câmera do aparelho não funciona.
   testWidgets('devolve o código digitado para a tela anterior', (tester) async {
@@ -35,7 +48,7 @@ void main() {
 
     expect(find.text('Aponte a câmera para o QR Code do gabarito.'), findsOneWidget);
 
-    await tester.tap(find.text('Digitar código').first);
+    await tester.tap(find.text('Digitar código'));
     await tester.pump(const Duration(milliseconds: 500));
 
     await tester.enterText(find.byType(TextField), '  GABARITO|1|prova-n3-direito  ');

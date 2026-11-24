@@ -57,6 +57,12 @@ class _BancoFalso {
           alunosBuscados.add(id);
           return alunos[id];
         },
+        buscarAlunoPorMatricula: (matricula) async {
+          for (final aluno in alunos.values) {
+            if (aluno.matricula == matricula) return aluno;
+          }
+          return null;
+        },
       );
 }
 
@@ -209,6 +215,63 @@ void main() {
       await expectLater(
         banco.localizador.localizarAlunoDaFolha('CORRETOR|1|so-a-prova', prova: provaP1),
         _erroCom('não reconhecido'),
+      );
+    });
+  });
+
+  group('Código digitado à mão', () {
+    test('gabarito aceita só o código da prova', () async {
+      final banco = _BancoFalso();
+
+      final prova = await banco.localizador.localizarGabarito('  Xk3P9qLmZ2vR8tYw1aBc ');
+
+      expect(prova.titulo, 'Direito Constitucional - P1');
+    });
+
+    test('gabarito com código de prova inexistente', () async {
+      final banco = _BancoFalso();
+
+      await expectLater(
+        banco.localizador.localizarGabarito('prova-que-nao-existe'),
+        _erroCom('não foi encontrada'),
+      );
+    });
+
+    test('código com espaço no meio não é aceito', () async {
+      final banco = _BancoFalso();
+
+      await expectLater(
+        banco.localizador.localizarGabarito('prova n3'),
+        _erroCom('não reconhecido'),
+      );
+      expect(banco.provasBuscadas, isEmpty);
+    });
+
+    test('folha aceita só a matrícula do aluno', () async {
+      final banco = _BancoFalso();
+      final prova = banco.provas['prova-n3-direito']!;
+
+      final aluno = await banco.localizador.localizarAlunoDaFolha('2024002', prova: prova);
+
+      expect(aluno.nome, 'Bruno Lima');
+    });
+
+    test('sem matrícula correspondente, procura pelo código do aluno', () async {
+      final banco = _BancoFalso();
+      final prova = banco.provas['prova-n3-direito']!;
+
+      final aluno = await banco.localizador.localizarAlunoDaFolha('aluno_003', prova: prova);
+
+      expect(aluno.nome, 'Camila Alves');
+    });
+
+    test('matrícula que não existe', () async {
+      final banco = _BancoFalso();
+      final prova = banco.provas['prova-n3-direito']!;
+
+      await expectLater(
+        banco.localizador.localizarAlunoDaFolha('9999999', prova: prova),
+        _erroCom('Nenhum aluno encontrado'),
       );
     });
   });
