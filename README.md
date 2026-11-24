@@ -11,7 +11,7 @@
 ![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)
 
 ![Status](https://img.shields.io/badge/status-em%20desenvolvimento-F5A623?style=flat-square)
-![Entrega](https://img.shields.io/badge/entrega%20atual-N2-3D348B?style=flat-square)
+![Entrega](https://img.shields.io/badge/entrega%20atual-N3-3D348B?style=flat-square)
 ![Licença](https://img.shields.io/badge/licença-uso%20acadêmico-7B4FA6?style=flat-square)
 
 </div>
@@ -40,6 +40,7 @@
 - [6. Estrutura de Pastas](#6-estrutura-de-pastas)
 - [7. Como Executar o Projeto](#7-como-executar-o-projeto)
 - [8. Backlog de Atividades da N2](#8-backlog-de-atividades-da-n2)
+- [9. Atualizações da N3 — Variações Individuais](#9-atualizações-da-n3--variações-individuais)
 
 ---
 
@@ -57,11 +58,11 @@ O **Corretor de Provas** resolve isso para o professor: ele monta a prova a part
 
 ### 2.1 Funcionais (RF)
 
-| Código | Requisito | Situação na N2 |
+| Código | Requisito | Situação até a N3 |
 |---|---|---|
 | RF01 | O sistema deve permitir cadastrar, editar e excluir questões em um banco de questões. | ✅ Implementado com Firestore |
 | RF02 | O sistema deve permitir montar e gerar uma prova a partir do banco de questões. | ✅ Implementado com Firestore |
-| RF03 | O sistema deve embaralhar a ordem das questões e das alternativas entre as provas (variação por aluno). | 🟡 Variações geradas na tela de criar prova; ainda não gravadas por aluno |
+| RF03 | O sistema deve embaralhar a ordem das questões e das alternativas entre as provas (variação por aluno). | ✅ Implementado na N3: variações individuais persistidas no Firestore e recuperadas para correção (PR #37, aguardando integração). |
 | RF04 | O sistema deve gerar a folha de resposta com um QR Code que identifica a prova e o aluno. | 🟡 Conteúdo do QR Code definido (prova + aluno); geração da folha pendente |
 | RF05 | O sistema deve ler o gabarito pelo QR Code. | ⏳ Leitura ainda simulada |
 | RF06 | O sistema deve ler a folha de resposta do aluno e reconhecer as alternativas marcadas. | 🟡 Aluno escolhido entre os cadastrados no Firestore; leitura pela câmera pendente |
@@ -361,6 +362,94 @@ Backlog real da N2, conferido com os Pull Requests mesclados no repositório.
 | Revisar estados de carregamento, erro e dados vazios | 17/10 | Concluído |
 | Gerar e validar APK com banco funcional | 23/10 | Concluído |
 | Atualizar diário de bordo individual | 25/10 | Concluído |
+
+---
+
+
+## 9. Atualizações da N3 — Variações Individuais
+
+📌 **N3 — Pull Request #37**
+
+Nesta etapa, foi implementada a geração, persistência e recuperação de variações individuais de provas, permitindo que cada aluno tenha uma versão própria, com questões e alternativas embaralhadas.
+
+### 9.1 Funcionalidades implementadas
+
+- Geração de versões individuais para alunos cadastrados.
+- Embaralhamento da ordem das questões e alternativas.
+- Persistência da variação individual no Cloud Firestore.
+- Recuperação da mesma versão anteriormente gerada para o aluno.
+- Integração da funcionalidade à tela de consulta de provas.
+- Seleção de provas cadastradas diretamente pela interface, sem consultar IDs no Console do Firebase.
+- Recuperação da variação individual durante a correção.
+- Conferência manual de respostas, considerando a ordem das alternativas da versão do aluno.
+
+### 9.2 Persistência no Firestore
+
+As variações são armazenadas na seguinte estrutura:
+
+`provas/{provaId}/variacoes/{alunoId}`
+
+Cada documento contém:
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| provaId | String | Identificador da prova original |
+| alunoId | String | Identificador do aluno |
+| questoes | Array | Questões e alternativas na ordem individual atribuída |
+| criadoEm | Timestamp | Data de criação da variação |
+
+Cada questão armazenada contém o identificador original, o enunciado, as alternativas embaralhadas e os índices originais das alternativas.
+
+Isso permite recuperar a correspondência entre as respostas da versão individual e o gabarito original.
+
+A geração verifica se já existe uma variação para aquele aluno e prova. Quando existe, a versão armazenada é recuperada, evitando gerar uma ordem diferente.
+
+### 9.3 Fluxo de utilização
+
+1. O professor cadastra questões no banco de questões.
+2. Cria uma prova selecionando as questões desejadas.
+3. Acessa a consulta de provas e escolhe a opção de gerar variação.
+4. Seleciona o aluno.
+5. O aplicativo gera ou recupera a versão individual e apresenta as questões e alternativas.
+6. Na tela de correção, o professor identifica a prova por QR Code ou pela lista.
+7. Identifica o aluno por QR Code, matrícula ou seleção na lista.
+8. O aplicativo recupera a variação armazenada no Firestore.
+9. O professor pode realizar uma conferência manual das respostas.
+
+### 9.4 Testes e validação
+
+Foram realizados testes com uma prova de duas questões e uma aluna cadastrada.
+
+Resultados observados:
+
+- Variação individual gerada e exibida.
+- Documento da variação confirmado no Firestore.
+- Recuperação da versão individual na tela de correção.
+- Seleção de provas e alunos pela interface.
+- `flutter analyze`: nenhum erro e 6 avisos informativos.
+- `flutter test`: 65 testes aprovados.
+
+### 9.5 Limitações e próximas integrações
+
+A conferência implementada nesta entrega recebe as respostas selecionadas manualmente e calcula a quantidade de acertos e a nota.
+
+O resultado dessa conferência ainda não é persistido no Firestore.
+
+A leitura automática das marcações na folha, a integração completa com a correção por câmera e os testes finais do APK dependem da integração com as demais funcionalidades da equipe.
+
+### 9.6 Arquivos envolvidos
+
+- `lib/models/variacao_prova_model.dart`
+- `lib/services/variacao_prova_service.dart`
+- `lib/screens/gerar_variacao_aluno_screen.dart`
+- `lib/screens/consultar_provas_screen.dart`
+- `lib/screens/corrigir_prova.dart`
+
+**Desenvolvimento:** Kauane Mota
+
+**Pull Request:** [#37 — Variações individuais e recuperação na correção](https://github.com/guiferrazk/Mobile-/pull/37)
+
+**Status:** Implementação enviada para revisão e integração na branch principal.
 
 ---
 
