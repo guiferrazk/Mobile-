@@ -37,6 +37,7 @@ class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
         builder: (_) => const LeitorQrCodeScreen(
           titulo: 'Ler Gabarito',
           instrucao: 'Aponte a câmera para o QR Code do gabarito.',
+          rotuloCodigo: 'Código da prova',
         ),
       ),
     );
@@ -68,6 +69,7 @@ class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
         builder: (_) => const LeitorQrCodeScreen(
           titulo: 'Ler Folha do Aluno',
           instrucao: 'Aponte a câmera para o QR Code da folha de resposta.',
+          rotuloCodigo: 'Matrícula do aluno',
         ),
       ),
     );

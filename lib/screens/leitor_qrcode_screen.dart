@@ -1,5 +1,8 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:mobile/theme/app_theme.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 
 /// Abre a câmera para ler um QR Code e devolve o texto lido com
@@ -9,10 +12,15 @@ class LeitorQrCodeScreen extends StatefulWidget {
   final String titulo;
   final String instrucao;
 
+  /// O que o professor deve digitar quando não usar a câmera, por exemplo
+  /// "Código da prova" ou "Matrícula do aluno".
+  final String rotuloCodigo;
+
   const LeitorQrCodeScreen({
     super.key,
     required this.titulo,
     required this.instrucao,
+    this.rotuloCodigo = 'Código impresso abaixo do QR Code',
   });
 
   @override
@@ -63,9 +71,9 @@ class _LeitorQrCodeScreenState extends State<LeitorQrCodeScreen> {
         content: TextField(
           controller: campo,
           autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Código impresso abaixo do QR Code',
-            border: OutlineInputBorder(),
+          decoration: InputDecoration(
+            labelText: widget.rotuloCodigo,
+            border: const OutlineInputBorder(),
           ),
           onSubmitted: (valor) => Navigator.pop(context, valor),
         ),
@@ -91,78 +99,150 @@ class _LeitorQrCodeScreenState extends State<LeitorQrCodeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: TituloPagina(icone: Icons.qr_code_scanner, texto: widget.titulo),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.flash_on),
-            tooltip: 'Lanterna',
-            onPressed: () => _controller.toggleTorch(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.cameraswitch_outlined),
-            tooltip: 'Trocar câmera',
-            onPressed: () => _controller.switchCamera(),
-          ),
-        ],
-      ),
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _aoDetectar,
-            errorBuilder: (context, erro) => _ErroCamera(
-              erro: erro,
-              aoDigitar: _digitarCodigo,
-            ),
-          ),
-          const _Moldura(),
-          Positioned(
-            left: 24,
-            right: 24,
-            bottom: 32,
-            child: Column(
-              children: [
-                Text(
-                  widget.instrucao,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+    // O estado da câmera decide o que aparece: com câmera, a moldura de
+    // leitura; sem câmera, só o aviso. Assim as duas coisas nunca se
+    // sobrepõem.
+    return ValueListenableBuilder<MobileScannerState>(
+      valueListenable: _controller,
+      builder: (context, estado, _) {
+        final semCamera = estado.error != null;
+
+        return Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            title: TituloPagina(icone: Icons.qr_code_scanner, texto: widget.titulo),
+            actions: [
+              if (!semCamera) ...[
+                IconButton(
+                  icon: const Icon(Icons.flash_on),
+                  tooltip: 'Lanterna',
+                  onPressed: () => _controller.toggleTorch(),
                 ),
-                const SizedBox(height: 16),
-                OutlinedButton.icon(
-                  onPressed: _digitarCodigo,
-                  icon: const Icon(Icons.keyboard),
-                  label: const Text('Digitar código'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white70),
-                  ),
+                IconButton(
+                  icon: const Icon(Icons.cameraswitch_outlined),
+                  tooltip: 'Trocar câmera',
+                  onPressed: () => _controller.switchCamera(),
                 ),
               ],
-            ),
+            ],
           ),
-        ],
-      ),
+          body: Column(
+            children: [
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    MobileScanner(
+                      controller: _controller,
+                      onDetect: _aoDetectar,
+                      errorBuilder: (context, erro) => _AvisoSemCamera(erro: erro),
+                    ),
+                    if (!semCamera) const _Moldura(),
+                  ],
+                ),
+              ),
+              _PainelInferior(
+                instrucao: semCamera
+                    ? 'Sem câmera? Toque em "Digitar código" e informe: '
+                        '${widget.rotuloCodigo.toLowerCase()}.'
+                    : widget.instrucao,
+                destacarBotao: semCamera,
+                aoDigitar: _digitarCodigo,
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
 
-/// Quadrado no centro da tela indicando onde posicionar o QR Code.
+/// Quadrado indicando onde posicionar o QR Code. O tamanho acompanha a
+/// tela, para caber bem tanto no celular quanto no computador.
 class _Moldura extends StatelessWidget {
   const _Moldura();
 
   @override
   Widget build(BuildContext context) {
     return IgnorePointer(
-      child: Center(
-        child: Container(
-          width: 240,
-          height: 240,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.white, width: 3),
-            borderRadius: BorderRadius.circular(12),
+      child: LayoutBuilder(
+        builder: (context, restricoes) {
+          final lado = math.min(
+            260.0,
+            math.min(restricoes.maxWidth, restricoes.maxHeight) * 0.7,
+          );
+
+          return Center(
+            child: Container(
+              width: lado,
+              height: lado,
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.white, width: 3),
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Faixa fixa na parte de baixo, separada da área da câmera, com a
+/// instrução e a opção de digitar o código.
+class _PainelInferior extends StatelessWidget {
+  final String instrucao;
+  final bool destacarBotao;
+  final VoidCallback aoDigitar;
+
+  const _PainelInferior({
+    required this.instrucao,
+    required this.destacarBotao,
+    required this.aoDigitar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final botao = destacarBotao
+        ? ElevatedButton.icon(
+            onPressed: aoDigitar,
+            icon: const Icon(Icons.keyboard),
+            label: const Text('Digitar código'),
+          )
+        : OutlinedButton.icon(
+            onPressed: aoDigitar,
+            icon: const Icon(Icons.keyboard),
+            label: const Text('Digitar código'),
+          );
+
+    return Container(
+      width: double.infinity,
+      color: AppCores.superficie,
+      child: SafeArea(
+        top: false,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    instrucao,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: AppCores.texto,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  botao,
+                ],
+              ),
+            ),
           ),
         ),
       ),
@@ -170,54 +250,67 @@ class _Moldura extends StatelessWidget {
   }
 }
 
-class _ErroCamera extends StatelessWidget {
+/// Aviso mostrado no lugar da imagem da câmera quando ela não pode ser usada.
+class _AvisoSemCamera extends StatelessWidget {
   final MobileScannerException erro;
-  final VoidCallback aoDigitar;
 
-  const _ErroCamera({required this.erro, required this.aoDigitar});
+  const _AvisoSemCamera({required this.erro});
 
-  String get _mensagem {
+  ({String titulo, String detalhe}) get _texto {
     return switch (erro.errorCode) {
-      MobileScannerErrorCode.permissionDenied =>
-        'O app não tem permissão para usar a câmera. '
-            'Libere o acesso nas configurações do aparelho.',
-      MobileScannerErrorCode.unsupported =>
-        'Não foi encontrada uma câmera disponível neste aparelho.',
-      _ => 'Não foi possível abrir a câmera.',
+      MobileScannerErrorCode.permissionDenied => (
+          titulo: 'Sem permissão para usar a câmera',
+          detalhe: 'Libere o acesso à câmera nas configurações do aparelho '
+              'ou do navegador.',
+        ),
+      MobileScannerErrorCode.unsupported => (
+          titulo: 'Câmera não encontrada',
+          detalhe: 'Este aparelho não tem uma câmera disponível.',
+        ),
+      _ => (
+          titulo: 'Não foi possível abrir a câmera',
+          detalhe: 'Feche outros apps que estejam usando a câmera e tente de novo.',
+        ),
     };
   }
 
   @override
   Widget build(BuildContext context) {
+    final texto = _texto;
+
     return ColoredBox(
       color: Colors.black,
       child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.no_photography_outlined,
-                  color: Colors.white70, size: 56),
-              const SizedBox(height: 16),
-              Text(
-                _mensagem,
-                textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Você ainda pode digitar o código impresso na folha.',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.white70),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton.icon(
-                onPressed: aoDigitar,
-                icon: const Icon(Icons.keyboard),
-                label: const Text('Digitar código'),
-              ),
-            ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(32),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.no_photography_outlined,
+                  color: Colors.white70,
+                  size: 56,
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  texto.titulo,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  texto.detalhe,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, height: 1.4),
+                ),
+              ],
+            ),
           ),
         ),
       ),
