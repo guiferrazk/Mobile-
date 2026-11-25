@@ -63,8 +63,8 @@ class ImportacaoAlunos {
       'xlsx' => _lerXlsx(bytes),
       'csv' => _lerCsv(bytes),
       _ => throw ImportacaoException(
-          'Formato não suportado. Use um arquivo .xlsx ou .csv.',
-        ),
+        'Formato não suportado. Use um arquivo .xlsx ou .csv.',
+      ),
     };
 
     if (!linhas.any((linha) => !_vazia(linha))) {
@@ -124,13 +124,15 @@ class ImportacaoAlunos {
         }
       }
 
-      resultado.add(LinhaImportacao(
-        numeroLinha: numeroLinha,
-        nome: nome,
-        email: email,
-        matricula: matricula,
-        erros: erros,
-      ));
+      resultado.add(
+        LinhaImportacao(
+          numeroLinha: numeroLinha,
+          nome: nome,
+          email: email,
+          matricula: matricula,
+          erros: erros,
+        ),
+      );
     }
 
     // Sem cabeçalho e com quase tudo inválido, o arquivo provavelmente não
@@ -182,7 +184,10 @@ class ImportacaoAlunos {
     // Usa só a primeira aba da planilha.
     final aba = planilha.tables.values.first;
     return aba.rows
-        .map((linha) => linha.map((celula) => _textoDaCelula(celula?.value)).toList())
+        .map(
+          (linha) =>
+              linha.map((celula) => _textoDaCelula(celula?.value)).toList(),
+        )
         .toList();
   }
 
@@ -232,13 +237,17 @@ class ImportacaoAlunos {
     if (indices.length < _apelidosColunas.length) {
       final faltando = _apelidosColunas.keys
           .where((coluna) => !indices.containsKey(coluna))
-          .map((coluna) => switch (coluna) {
-                'email' => 'E-mail',
-                'matricula' => 'Matrícula',
-                _ => 'Nome',
-              })
+          .map(
+            (coluna) => switch (coluna) {
+              'email' => 'E-mail',
+              'matricula' => 'Matrícula',
+              _ => 'Nome',
+            },
+          )
           .join(', ');
-      throw ImportacaoException('Coluna obrigatória não encontrada: $faltando.');
+      throw ImportacaoException(
+        'Coluna obrigatória não encontrada: $faltando.',
+      );
     }
 
     return indices;

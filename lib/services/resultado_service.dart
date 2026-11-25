@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mobile/services/professor_atual.dart';
 import 'package:mobile/models/aluno_model.dart';
 import 'package:mobile/models/identificacao_prova.dart';
 import 'package:mobile/models/resultado_model.dart';
@@ -23,13 +24,14 @@ class FolhaIdentificada {
 
 /// Operações dos resultados de correção no Firestore (coleção `resultados`).
 class ResultadoService {
-  final CollectionReference<Map<String, dynamic>> _colecao =
-      FirebaseFirestore.instance.collection('resultados');
+  final CollectionReference<Map<String, dynamic>> _colecao = FirebaseFirestore
+      .instance
+      .collection('resultados');
 
   final AlunoService _alunoService;
 
   ResultadoService({AlunoService? alunoService})
-      : _alunoService = alunoService ?? AlunoService();
+    : _alunoService = alunoService ?? AlunoService();
 
   /// Lê o QR Code da folha e busca o aluno correspondente.
   Future<FolhaIdentificada> identificarFolha(String conteudoQrCode) async {
@@ -55,15 +57,20 @@ class ResultadoService {
   Future<void> salvar(Resultado resultado) {
     return _colecao.doc(resultado.id).set({
       ...resultado.toMap(),
+      campoProfessorId: professorIdAtual(),
       'corrigidoEm': FieldValue.serverTimestamp(),
     });
   }
 
   Future<Resultado?> buscar(String provaId, String alunoId) async {
-    final documento = await _colecao.doc(Resultado.idPara(provaId, alunoId)).get();
+    final documento = await _colecao
+        .doc(Resultado.idPara(provaId, alunoId))
+        .get();
     final dados = documento.data();
 
-    if (!documento.exists || dados == null) {
+    if (!documento.exists ||
+        dados == null ||
+        dados[campoProfessorId] != professorIdAtual()) {
       return null;
     }
 
@@ -72,7 +79,11 @@ class ResultadoService {
 
   /// Resultados de uma prova, em ordem alfabética de aluno.
   Stream<List<Resultado>> listarPorProva(String provaId) {
-    return _listarOnde('provaId', provaId, (a, b) => a.alunoNome.compareTo(b.alunoNome));
+    return _listarOnde(
+      'provaId',
+      provaId,
+      (a, b) => a.alunoNome.compareTo(b.alunoNome),
+    );
   }
 
   /// Resultados de um aluno, do mais recente para o mais antigo.
@@ -87,15 +98,17 @@ class ResultadoService {
   /// Todos os resultados de todas as provas, do mais recente para o mais
   /// antigo. Usado na tela de provas corrigidas.
   Stream<List<Resultado>> listarTodos() {
-    return _colecao.snapshots().map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _deDocumento(doc.data()))
-              .toList()
-            ..sort((a, b) {
-              final dataA = a.corrigidoEm ?? DateTime(0);
-              final dataB = b.corrigidoEm ?? DateTime(0);
-              return dataB.compareTo(dataA);
-            }),
+    return _colecao
+        .where(campoProfessorId, isEqualTo: professorIdAtual())
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => _deDocumento(doc.data())).toList()
+                ..sort((a, b) {
+                  final dataA = a.corrigidoEm ?? DateTime(0);
+                  final dataB = b.corrigidoEm ?? DateTime(0);
+                  return dataB.compareTo(dataA);
+                }),
         );
   }
 
@@ -109,11 +122,14 @@ class ResultadoService {
     String valor,
     int Function(Resultado, Resultado) ordem,
   ) {
-    return _colecao.where(campo, isEqualTo: valor).snapshots().map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _deDocumento(doc.data()))
-              .toList()
-            ..sort(ordem),
+    return _colecao
+        .where(campoProfessorId, isEqualTo: professorIdAtual())
+        .where(campo, isEqualTo: valor)
+        .snapshots()
+        .map(
+          (snapshot) =>
+              snapshot.docs.map((doc) => _deDocumento(doc.data())).toList()
+                ..sort(ordem),
         );
   }
 

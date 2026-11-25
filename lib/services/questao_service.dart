@@ -1,20 +1,34 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:mobile/services/professor_atual.dart';
 
 import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/questao_model.dart';
 
 /// Acesso aos dados de questões na coleção "questoes" do Cloud Firestore.
 class QuestaoService {
-  final CollectionReference<Map<String, dynamic>> _colecao =
-  FirebaseFirestore.instance.collection('questoes');
+  final CollectionReference<Map<String, dynamic>> _colecao = FirebaseFirestore
+      .instance
+      .collection('questoes');
 
   /// Lista de questões em tempo real, da mais antiga para a mais nova.
   Stream<List<Questao>> listar() {
-    return _colecao.orderBy('criadoEm').snapshots().map(
-          (snapshot) => snapshot.docs
-          .map((doc) => Questao.fromMap(doc.id, doc.data()))
-          .toList(),
-    );
+    // Ordenação no app para não exigir índice composto no Firestore.
+    return _colecao
+        .where(campoProfessorId, isEqualTo: professorIdAtual())
+        .snapshots()
+        .map(
+          (snapshot) =>
+              (snapshot.docs.toList()..sort((a, b) {
+                    final dataA = a.data()['criadoEm'];
+                    final dataB = b.data()['criadoEm'];
+                    // Documento recém-criado ainda sem horário do servidor vai por último.
+                    if (dataA is! Timestamp) return dataB is Timestamp ? 1 : 0;
+                    if (dataB is! Timestamp) return -1;
+                    return dataA.compareTo(dataB);
+                  }))
+                  .map((doc) => Questao.fromMap(doc.id, doc.data()))
+                  .toList(),
+        );
   }
 
   /// Cadastra uma nova questão. O id é gerado pelo Firestore, então o
@@ -22,6 +36,7 @@ class QuestaoService {
   Future<void> cadastrar(Questao questao) {
     return _colecao.add({
       ...questao.toMap(),
+      campoProfessorId: professorIdAtual(),
       'criadoEm': FieldValue.serverTimestamp(),
     });
   }
@@ -49,6 +64,7 @@ class QuestaoService {
         batch.set(_colecao.doc(questao.id), {
           ...questao.toMap(),
           'materiaId': materia.id,
+          campoProfessorId: professorIdAtual(),
           'criadoEm': FieldValue.serverTimestamp(),
         });
         total++;

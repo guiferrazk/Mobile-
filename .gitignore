@@ -29,3 +29,6 @@ doc/api/
 .flutter-plugins-dependencies
 # Android Studio / IntelliJ
 .idea/
+# Segredos e dependências das ferramentas
+tool/chave-servico.json
+tool/node_modules/

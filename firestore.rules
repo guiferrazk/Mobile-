@@ -1,0 +1,41 @@
+rules_version = '2';
+
+// Cada professor só enxerga e altera os documentos que têm o uid dele no
+// campo professorId (alunos, turmas, materias, questoes, provas, resultados).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    function ehDono() {
+      return logado() && resource.data.professorId == request.auth.uid;
+    }
+
+    function vaiSerDono() {
+      return logado() && request.resource.data.professorId == request.auth.uid;
+    }
+
+    function colecaoDoProfessor(colecao) {
+      return colecao in ['alunos', 'turmas', 'materias', 'questoes', 'provas', 'resultados'];
+    }
+
+    // O perfil do professor é só dele.
+    match /professores/{uid} {
+      allow read, write: if logado() && request.auth.uid == uid;
+    }
+
+    match /{colecao}/{id} {
+      // Só as coleções de dados do professor; qualquer outra fica negada.
+      // Leitura de um documento que não existe é liberada para o app
+      // poder responder "não encontrado" em vez de erro de permissão.
+      allow get: if colecaoDoProfessor(colecao) && logado() &&
+        (resource == null || resource.data.professorId == request.auth.uid);
+      allow list: if colecaoDoProfessor(colecao) && ehDono();
+      allow create: if colecaoDoProfessor(colecao) && vaiSerDono();
+      allow update: if colecaoDoProfessor(colecao) && ehDono() && vaiSerDono();
+      allow delete: if colecaoDoProfessor(colecao) && ehDono();
+    }
+  }
+}
