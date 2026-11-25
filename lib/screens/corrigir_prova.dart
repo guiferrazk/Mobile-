@@ -9,7 +9,11 @@ import '../models/aluno_model.dart';
 import '../models/prova_model.dart';
 import '../models/variacao_prova_model.dart';
 
+import '../models/resultado_model.dart';
 import '../services/localizador_prova.dart';
+import '../services/questao_service.dart';
+import '../services/resultado_service.dart';
+import 'resultado_prova_screen.dart';
 import '../services/prova_service.dart';
 import '../services/variacao_prova_service.dart';
 
@@ -419,6 +423,14 @@ class _ProvaAlunoLidaScreenState
 
   int? _acertos;
 
+  /// Alternativa marcada em cada questão (id -> índice na ordem original),
+  /// preenchida ao conferir. É o que vai para o resultado salvo.
+  Map<String, int?> _respostasOriginais = {};
+
+  final _questaoService = QuestaoService();
+  final _resultadoService = ResultadoService();
+  bool _salvando = false;
+
   @override
   void initState() {
     super.initState();
@@ -444,6 +456,7 @@ class _ProvaAlunoLidaScreenState
     }
 
     var totalAcertos = 0;
+    final respostasOriginais = <String, int?>{};
 
     for (var i = 0; i < variacao.questoes.length; i++) {
       final questao = variacao.questoes[i];
@@ -473,6 +486,8 @@ class _ProvaAlunoLidaScreenState
         return;
       }
 
+      respostasOriginais[questao.questaoId] = originalMarcado;
+
       if (originalMarcado == originalCorreto) {
         totalAcertos++;
       }
@@ -480,7 +495,55 @@ class _ProvaAlunoLidaScreenState
 
     setState(() {
       _acertos = totalAcertos;
+      _respostasOriginais = respostasOriginais;
     });
+  }
+
+  /// Grava o resultado conferido (substituindo o anterior do aluno nesta
+  /// prova) e abre a tela de resultado com os dados reais.
+  Future<void> _registrarResultado() async {
+    if (_salvando) return;
+    setState(() => _salvando = true);
+
+    try {
+      final todas = await _questaoService.listar().first;
+      final porId = {for (final q in todas) q.id: q};
+      final questoes = [
+        for (final id in widget.prova.questaoIds)
+          if (porId[id] != null) porId[id]!,
+      ];
+
+      final resultado = Resultado.corrigir(
+        provaId: widget.prova.id,
+        aluno: widget.aluno,
+        questoes: questoes,
+        respostas: _respostasOriginais,
+      );
+
+      await _resultadoService.salvar(resultado);
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResultadoProvaScreen(
+            resultado: resultado,
+            questoes: questoes,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível salvar o resultado. ${MensagensErro.de(e)}',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _salvando = false);
+    }
   }
 
   Widget _mostrarVariacao(VariacaoProva variacao) {
@@ -645,10 +708,20 @@ class _ProvaAlunoLidaScreenState
 
                   const SizedBox(height: 8),
 
-                  const Text(
-                    'Resultado apenas para conferência. '
-                    'Ainda não foi registrado no Firestore.',
-                    textAlign: TextAlign.center,
+                  const SizedBox(height: 8),
+
+                  ElevatedButton.icon(
+                    onPressed: _salvando ? null : _registrarResultado,
+                    icon: _salvando
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save),
+                    label: Text(
+                      _salvando ? 'Salvando...' : 'Registrar resultado',
+                    ),
                   ),
                 ],
               ),

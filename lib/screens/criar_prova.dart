@@ -1,12 +1,14 @@
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mobile/theme/app_theme.dart';
 import 'package:mobile/utils/mensagens_erro.dart';
 
-import 'package:mobile/mocks/mock_materia.dart';
 import 'package:mobile/models/alternativa_model.dart';
+import 'package:mobile/models/materia_model.dart';
 import 'package:mobile/models/prova_model.dart';
 import 'package:mobile/models/questao_model.dart';
+import 'package:mobile/services/materia_service.dart';
 import 'package:mobile/services/prova_service.dart';
 import 'package:mobile/services/questao_service.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
@@ -37,11 +39,14 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
 
   final QuestaoService _questaoService = QuestaoService();
   final ProvaService _provaService = ProvaService();
+  final MateriaService _materiaService = MateriaService();
 
   late final Stream<List<Questao>> _questoesStream =
       _questaoService.listar();
 
   List<Questao> _questoesDisponiveis = [];
+  List<Materia> _materias = [];
+  StreamSubscription<List<Materia>>? _materiasSubscription;
 
   final Set<String> _idsSelecionados = {};
 
@@ -51,14 +56,23 @@ class _CriarProvaScreenState extends State<CriarProvaScreen> {
   bool _salvando = false;
 
   @override
+  void initState() {
+    super.initState();
+    _materiasSubscription = _materiaService.listar().listen((materias) {
+      if (mounted) setState(() => _materias = materias);
+    });
+  }
+
+  @override
   void dispose() {
     _tituloController.dispose();
+    _materiasSubscription?.cancel();
     super.dispose();
   }
 
   /// Retorna o nome da matéria pelo seu ID.
   String _nomeMateria(String? materiaId) {
-    for (final materia in listaMateria) {
+    for (final materia in _materias) {
       if (materia.id == materiaId) {
         return materia.descricao;
       }
