@@ -26,6 +26,12 @@ service cloud.firestore {
       allow read, write: if logado() && request.auth.uid == uid;
     }
 
+    // Variações individuais da prova: valem as mesmas regras da prova dona.
+    match /provas/{provaId}/variacoes/{alunoId} {
+      allow read, write: if logado() &&
+        get(/databases/$(database)/documents/provas/$(provaId)).data.professorId == request.auth.uid;
+    }
+
     match /{colecao}/{id} {
       // Só as coleções de dados do professor; qualquer outra fica negada.
       // Leitura de um documento que não existe é liberada para o app

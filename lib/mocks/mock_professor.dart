@@ -1,35 +1,36 @@
 
 import 'package:mobile/models/professor_model.dart';
 
+/// Lista de professores fictícios para testes.
 final List<Professor> listaProfessor = <Professor>[
   Professor(
-    id: '1',
-    nome: 'Roberto Cavalcanti Nogueira',
+    uid: '1',
+    nomeCompleto: 'Roberto Cavalcanti Nogueira',
+    dataNascimento: '',
     email: 'roberto.nogueira@faculdade.edu.br',
-    materia: 'Direito Constitucional',
   ),
   Professor(
-    id: '2',
-    nome: 'Fernanda Assis Moreira',
+    uid: '2',
+    nomeCompleto: 'Fernanda Assis Moreira',
+    dataNascimento: '',
     email: 'fernanda.moreira@faculdade.edu.br',
-    materia: 'Direito Civil',
   ),
   Professor(
-    id: '3',
-    nome: 'Marcelo Tavares Guimarães',
+    uid: '3',
+    nomeCompleto: 'Marcelo Tavares Guimarães',
+    dataNascimento: '',
     email: 'marcelo.guimaraes@faculdade.edu.br',
-    materia: 'Direito Penal',
   ),
   Professor(
-    id: '4',
-    nome: 'Patrícia Lemos Andrade',
+    uid: '4',
+    nomeCompleto: 'Patrícia Lemos Andrade',
+    dataNascimento: '',
     email: 'patricia.andrade@faculdade.edu.br',
-    materia: 'Direito Processual Civil',
   ),
   Professor(
-    id: '5',
-    nome: 'Gustavo Barros Ribeiro',
+    uid: '5',
+    nomeCompleto: 'Gustavo Barros Ribeiro',
+    dataNascimento: '',
     email: 'gustavo.ribeiro@faculdade.edu.br',
-    materia: 'Direito Administrativo',
   ),
 ];

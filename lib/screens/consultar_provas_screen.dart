@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/utils/mensagens_erro.dart';
 
+import 'gerar_variacao_aluno_screen.dart';
 import 'package:mobile/models/prova_model.dart';
 import 'package:mobile/models/questao_model.dart';
 import 'package:mobile/services/prova_service.dart';
@@ -92,8 +93,29 @@ class _ConsultarProvasScreenState
                       subtitle: Text(
                         '${prova.questaoIds.length} questão(ões)',
                       ),
-                      trailing: const Icon(Icons.edit_outlined),
-                      onTap: () => _abrirEdicao(prova),
+                      
+trailing: Row(
+  mainAxisSize: MainAxisSize.min,
+  children: [
+    IconButton(
+      tooltip: 'Gerar variação por aluno',
+      icon: const Icon(Icons.shuffle),
+      onPressed: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => GerarVariacaoAlunoScreen(
+              prova: prova,
+            ),
+          ),
+        );
+      },
+    ),
+    const Icon(Icons.edit_outlined),
+  ],
+),
+onTap: () => _abrirEdicao(prova),
+
                     ),
                   );
                 },

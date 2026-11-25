@@ -1,30 +1,39 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:mobile/main.dart';
+import 'package:mobile/widgets/titulo_pagina.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets(
+    'Deve exibir o título da tela Corrigir Prova',
+    (WidgetTester tester) async {
+      // Monta um componente real do projeto.
+      // Não precisa inicializar o Firebase.
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            appBar: AppBar(
+              title: const TituloPagina(
+                icone: Icons.document_scanner_outlined,
+                texto: 'Corrigir Prova',
+              ),
+            ),
+          ),
+        ),
+      );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      // Verifica se o título aparece na tela.
+      expect(
+        find.text('Corrigir Prova'),
+        findsOneWidget,
+      );
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
-  });
+      // Verifica se o ícone aparece na tela.
+      expect(
+        find.byIcon(Icons.document_scanner_outlined),
+        findsOneWidget,
+      );
+    },
+  );
 }
