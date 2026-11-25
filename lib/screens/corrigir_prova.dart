@@ -1,6 +1,8 @@
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
+import 'package:mobile/services/leitor_marcacoes.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 import 'package:mobile/theme/app_theme.dart';
 import 'package:mobile/utils/mensagens_erro.dart';
@@ -24,12 +26,10 @@ class CorrigirProvaScreen extends StatefulWidget {
   const CorrigirProvaScreen({super.key});
 
   @override
-  State<CorrigirProvaScreen> createState() =>
-      _CorrigirProvaScreenState();
+  State<CorrigirProvaScreen> createState() => _CorrigirProvaScreenState();
 }
 
-class _CorrigirProvaScreenState
-    extends State<CorrigirProvaScreen> {
+class _CorrigirProvaScreenState extends State<CorrigirProvaScreen> {
   final _localizador = LocalizadorProva.firestore();
   final _provaService = ProvaService();
 
@@ -66,36 +66,25 @@ class _CorrigirProvaScreenState
               }
 
               if (!snapshot.hasData) {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return const Center(child: CircularProgressIndicator());
               }
 
               final provas = snapshot.data!;
 
               if (provas.isEmpty) {
-                return const Center(
-                  child: Text(
-                    'Nenhuma prova cadastrada.',
-                  ),
-                );
+                return const Center(child: Text('Nenhuma prova cadastrada.'));
               }
 
               return ListView.separated(
                 itemCount: provas.length,
-                separatorBuilder: (_, _) =>
-                    const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final prova = provas[index];
 
                   return ListTile(
-                    leading: const Icon(
-                      Icons.description_outlined,
-                    ),
+                    leading: const Icon(Icons.description_outlined),
                     title: Text(prova.titulo),
-                    subtitle: Text(
-                      '${prova.questaoIds.length} questão(ões)',
-                    ),
+                    subtitle: Text('${prova.questaoIds.length} questão(ões)'),
                     onTap: () {
                       Navigator.of(dialogContext).pop(prova);
                     },
@@ -130,8 +119,7 @@ class _CorrigirProvaScreenState
       MaterialPageRoute(
         builder: (_) => const LeitorQrCodeScreen(
           titulo: 'Ler Gabarito',
-          instrucao:
-              'Aponte a câmera para o QR Code do gabarito.',
+          instrucao: 'Aponte a câmera para o QR Code do gabarito.',
           rotuloCodigo: 'Código da prova',
         ),
       ),
@@ -142,8 +130,7 @@ class _CorrigirProvaScreenState
     setState(() => _buscando = true);
 
     try {
-      final prova =
-          await _localizador.localizarGabarito(conteudo);
+      final prova = await _localizador.localizarGabarito(conteudo);
 
       if (!mounted) return;
 
@@ -173,8 +160,7 @@ class _CorrigirProvaScreenState
       MaterialPageRoute(
         builder: (_) => const LeitorQrCodeScreen(
           titulo: 'Ler Folha do Aluno',
-          instrucao:
-              'Aponte a câmera para o QR Code da folha.',
+          instrucao: 'Aponte a câmera para o QR Code da folha.',
           rotuloCodigo: 'Matrícula do aluno',
         ),
       ),
@@ -185,8 +171,7 @@ class _CorrigirProvaScreenState
     setState(() => _buscando = true);
 
     try {
-      final aluno =
-          await _localizador.localizarAlunoDaFolha(
+      final aluno = await _localizador.localizarAlunoDaFolha(
         conteudo,
         prova: prova,
       );
@@ -216,9 +201,7 @@ class _CorrigirProvaScreenState
 
     final aluno = await Navigator.push<Aluno>(
       context,
-      MaterialPageRoute(
-        builder: (_) => const SelecionarAlunoScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const SelecionarAlunoScreen()),
     );
 
     if (aluno == null || !mounted) return;
@@ -230,10 +213,7 @@ class _CorrigirProvaScreenState
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ProvaAlunoLidaScreen(
-          aluno: aluno,
-          prova: prova,
-        ),
+        builder: (_) => ProvaAlunoLidaScreen(aluno: aluno, prova: prova),
       ),
     );
   }
@@ -241,9 +221,8 @@ class _CorrigirProvaScreenState
   void _mostrarMensagem(String mensagem) {
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensagem)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mensagem)));
   }
 
   @override
@@ -263,8 +242,7 @@ class _CorrigirProvaScreenState
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Icon(
                   Icons.qr_code_scanner,
@@ -292,14 +270,11 @@ class _CorrigirProvaScreenState
                 if (_buscando)
                   const Padding(
                     padding: EdgeInsets.only(bottom: 16),
-                    child: Center(
-                      child: CircularProgressIndicator(),
-                    ),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
 
                 ElevatedButton.icon(
-                  onPressed:
-                      _buscando ? null : _lerQrCodeGabarito,
+                  onPressed: _buscando ? null : _lerQrCodeGabarito,
                   icon: const Icon(Icons.qr_code),
                   label: Text(
                     prova == null
@@ -307,8 +282,7 @@ class _CorrigirProvaScreenState
                         : 'Ler outro gabarito',
                   ),
                   style: ElevatedButton.styleFrom(
-                    minimumSize:
-                        const Size(double.infinity, 50),
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                 ),
 
@@ -316,38 +290,28 @@ class _CorrigirProvaScreenState
 
                 // NOVO botão para selecionar a prova.
                 OutlinedButton.icon(
-                  onPressed: _buscando
-                      ? null
-                      : _selecionarProvaNaLista,
+                  onPressed: _buscando ? null : _selecionarProvaNaLista,
                   icon: const Icon(Icons.list_alt),
-                  label: const Text(
-                    'Selecionar prova na lista',
-                  ),
+                  label: const Text('Selecionar prova na lista'),
                   style: OutlinedButton.styleFrom(
-                    minimumSize:
-                        const Size(double.infinity, 50),
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                 ),
 
                 const SizedBox(height: 16),
 
                 ElevatedButton.icon(
-                  onPressed: prova == null || _buscando
-                      ? null
-                      : _lerFolhaAluno,
+                  onPressed: prova == null || _buscando ? null : _lerFolhaAluno,
                   icon: const Icon(Icons.assignment),
                   label: const Text('Ler prova do aluno'),
                   style: ElevatedButton.styleFrom(
-                    minimumSize:
-                        const Size(double.infinity, 50),
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                 ),
 
                 if (prova != null)
                   TextButton(
-                    onPressed: _buscando
-                        ? null
-                        : _escolherAlunoNaLista,
+                    onPressed: _buscando ? null : _escolherAlunoNaLista,
                     child: const Text(
                       'Folha ilegível? Escolher o aluno na lista',
                     ),
@@ -359,9 +323,7 @@ class _CorrigirProvaScreenState
                       'Selecione a prova para liberar '
                       'a identificação do aluno.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppCores.textoSuave,
-                      ),
+                      style: TextStyle(color: AppCores.textoSuave),
                     ),
                   ),
               ],
@@ -409,12 +371,10 @@ class ProvaAlunoLidaScreen extends StatefulWidget {
   });
 
   @override
-  State<ProvaAlunoLidaScreen> createState() =>
-      _ProvaAlunoLidaScreenState();
+  State<ProvaAlunoLidaScreen> createState() => _ProvaAlunoLidaScreenState();
 }
 
-class _ProvaAlunoLidaScreenState
-    extends State<ProvaAlunoLidaScreen> {
+class _ProvaAlunoLidaScreenState extends State<ProvaAlunoLidaScreen> {
   final _variacaoService = VariacaoProvaService();
 
   late final Future<VariacaoProva?> _variacaoFuture;
@@ -431,25 +391,88 @@ class _ProvaAlunoLidaScreenState
   final _resultadoService = ResultadoService();
   bool _salvando = false;
 
+  bool _lendoFolha = false;
+  MarcacoesLidas? _leitura;
+
+  bool _precisaConferir(int questao) {
+    final leitura = _leitura;
+    if (leitura == null) return false;
+    return leitura.emBranco.contains(questao) ||
+        leitura.marcacaoDupla.contains(questao);
+  }
+
+  /// Fotografa (ou escolhe a foto da) folha de respostas e preenche a
+  /// conferência com as alternativas reconhecidas. O professor confere
+  /// antes de salvar.
+  Future<void> _lerFolha(VariacaoProva variacao, ImageSource origem) async {
+    if (_lendoFolha) return;
+
+    final XFile? foto;
+    try {
+      foto = await ImagePicker().pickImage(
+        source: origem,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 92,
+      );
+    } catch (_) {
+      _avisar(
+        'Não foi possível abrir a câmera. Confira se o app tem '
+        'permissão para usá-la.',
+      );
+      return;
+    }
+    if (foto == null || !mounted) return;
+
+    setState(() => _lendoFolha = true);
+
+    try {
+      final bytes = await foto.readAsBytes();
+      final alternativas = [
+        for (final questao in variacao.questoes) questao.alternativas.length,
+      ];
+      // A leitura percorre a foto inteira; em segundo plano a tela não trava.
+      final lidas = await compute(_lerMarcacoes, (bytes, alternativas));
+      if (!mounted) return;
+
+      setState(() {
+        _leitura = lidas;
+        _acertos = null;
+        _respostasMarcadas
+          ..clear()
+          ..addAll({
+            for (var i = 0; i < lidas.respostas.length; i++)
+              if (lidas.respostas[i] != null) i: lidas.respostas[i]!,
+          });
+      });
+    } on LeituraFolhaException catch (e) {
+      _avisar(e.mensagem);
+    } catch (_) {
+      _avisar('Não foi possível ler a folha. Tente outra foto.');
+    } finally {
+      if (mounted) setState(() => _lendoFolha = false);
+    }
+  }
+
+  void _avisar(String mensagem) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mensagem)));
+  }
+
   @override
   void initState() {
     super.initState();
 
-    _variacaoFuture = _variacaoService.buscar(
-      widget.prova.id,
-      widget.aluno.id,
-    );
+    _variacaoFuture = _variacaoService.buscar(widget.prova.id, widget.aluno.id);
   }
 
   /// Confere manualmente as respostas informadas.
   void _conferirRespostas(VariacaoProva variacao) {
-    if (_respostasMarcadas.length !=
-        variacao.questoes.length) {
+    if (_respostasMarcadas.length != variacao.questoes.length) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'Informe uma resposta para cada questão.',
-          ),
+          content: Text('Informe uma resposta para cada questão.'),
         ),
       );
       return;
@@ -462,19 +485,15 @@ class _ProvaAlunoLidaScreenState
       final questao = variacao.questoes[i];
       final indiceMarcado = _respostasMarcadas[i]!;
 
-      final indiceCorreto =
-          questao.alternativas.indexWhere(
+      final indiceCorreto = questao.alternativas.indexWhere(
         (alternativa) => alternativa.isCorreta,
       );
 
-      final originalMarcado =
-          questao.indiceOriginal(indiceMarcado);
+      final originalMarcado = questao.indiceOriginal(indiceMarcado);
 
-      final originalCorreto =
-          questao.indiceOriginal(indiceCorreto);
+      final originalCorreto = questao.indiceOriginal(indiceCorreto);
 
-      if (originalMarcado == null ||
-          originalCorreto == null) {
+      if (originalMarcado == null || originalCorreto == null) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -526,10 +545,8 @@ class _ProvaAlunoLidaScreenState
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ResultadoProvaScreen(
-            resultado: resultado,
-            questoes: questoes,
-          ),
+          builder: (_) =>
+              ResultadoProvaScreen(resultado: resultado, questoes: questoes),
         ),
       );
     } catch (e) {
@@ -556,8 +573,7 @@ class _ProvaAlunoLidaScreenState
     }
 
     if (variacao.questoes.isEmpty ||
-        variacao.questoes.length !=
-            widget.prova.questaoIds.length) {
+        variacao.questoes.length != widget.prova.questaoIds.length) {
       return const Text(
         'Os dados da variação estão incompletos. '
         'Verifique o registro no Firestore.',
@@ -574,10 +590,7 @@ class _ProvaAlunoLidaScreenState
             padding: EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(
-                  Icons.cloud_done,
-                  color: AppCores.sucesso,
-                ),
+                Icon(Icons.cloud_done, color: AppCores.sucesso),
                 SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -592,12 +605,18 @@ class _ProvaAlunoLidaScreenState
 
         const SizedBox(height: 16),
 
+        _LeituraDaFolha(
+          lendo: _lendoFolha,
+          leitura: _leitura,
+          aoFotografar: () => _lerFolha(variacao, ImageSource.camera),
+          aoEscolherFoto: () => _lerFolha(variacao, ImageSource.gallery),
+        ),
+
+        const SizedBox(height: 16),
+
         const Text(
           'Conferência manual de respostas',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
 
         const SizedBox(height: 8),
@@ -612,30 +631,33 @@ class _ProvaAlunoLidaScreenState
         for (var i = 0; i < variacao.questoes.length; i++)
           Card(
             margin: const EdgeInsets.only(bottom: 12),
+            // Questões que a leitura não conseguiu decidir ficam em destaque.
+            shape: _precisaConferir(i)
+                ? RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: AppCores.alerta, width: 2),
+                  )
+                : null,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
                     '${i + 1}. '
                     '${variacao.questoes[i].enunciado}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 12),
 
-                  for (var j = 0;
-                      j <
-                          variacao
-                              .questoes[i].alternativas.length;
-                      j++)
+                  for (
+                    var j = 0;
+                    j < variacao.questoes[i].alternativas.length;
+                    j++
+                  )
                     Padding(
-                      padding:
-                          const EdgeInsets.only(bottom: 6),
+                      padding: const EdgeInsets.only(bottom: 6),
                       child: OutlinedButton(
                         onPressed: () {
                           setState(() {
@@ -671,8 +693,7 @@ class _ProvaAlunoLidaScreenState
         const SizedBox(height: 16),
 
         ElevatedButton.icon(
-          onPressed: () =>
-              _conferirRespostas(variacao),
+          onPressed: () => _conferirRespostas(variacao),
           icon: const Icon(Icons.fact_check_outlined),
           label: const Text('Conferir respostas'),
         ),
@@ -687,9 +708,7 @@ class _ProvaAlunoLidaScreenState
                 children: [
                   const Text(
                     'Resultado da conferência manual',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.bold),
                   ),
 
                   const SizedBox(height: 12),
@@ -735,27 +754,20 @@ class _ProvaAlunoLidaScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Prova do Aluno Lida'),
-      ),
+      appBar: AppBar(title: const Text('Prova do Aluno Lida')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 700),
           child: ListView(
             padding: const EdgeInsets.all(24),
             children: [
-              const Icon(
-                Icons.check_circle,
-                color: AppCores.sucesso,
-                size: 60,
-              ),
+              const Icon(Icons.check_circle, color: AppCores.sucesso, size: 60),
 
               const SizedBox(height: 16),
 
               Text(
                 'Prova identificada com sucesso!',
-                style:
-                    Theme.of(context).textTheme.titleMedium,
+                style: Theme.of(context).textTheme.titleMedium,
               ),
 
               const SizedBox(height: 24),
@@ -768,9 +780,7 @@ class _ProvaAlunoLidaScreenState
 
               const SizedBox(height: 8),
 
-              Text(
-                'Matrícula: ${widget.aluno.matricula}',
-              ),
+              Text('Matrícula: ${widget.aluno.matricula}'),
 
               const SizedBox(height: 20),
 
@@ -784,11 +794,8 @@ class _ProvaAlunoLidaScreenState
                     );
                   }
 
-                  if (snapshot.connectionState !=
-                      ConnectionState.done) {
-                    return const Center(
-                      child: CircularProgressIndicator(),
-                    );
+                  if (snapshot.connectionState != ConnectionState.done) {
+                    return const Center(child: CircularProgressIndicator());
                   }
 
                   final variacao = snapshot.data;
@@ -812,6 +819,115 @@ class _ProvaAlunoLidaScreenState
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Roda fora da tela (em outro isolate no celular) para a leitura da foto
+/// não travar a interface.
+MarcacoesLidas _lerMarcacoes((Uint8List, List<int>) dados) {
+  return LeitorMarcacoes.ler(dados.$1, alternativasPorQuestao: dados.$2);
+}
+
+/// Card com os botões para ler a folha pela câmera e o resumo da leitura.
+class _LeituraDaFolha extends StatelessWidget {
+  final bool lendo;
+  final MarcacoesLidas? leitura;
+  final VoidCallback aoFotografar;
+  final VoidCallback aoEscolherFoto;
+
+  const _LeituraDaFolha({
+    required this.lendo,
+    required this.leitura,
+    required this.aoFotografar,
+    required this.aoEscolherFoto,
+  });
+
+  String _questoes(List<int> indices) =>
+      indices.map((i) => '${i + 1}').join(', ');
+
+  @override
+  Widget build(BuildContext context) {
+    final lida = leitura;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Ler marcações da folha',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Fotografe a folha de respostas inteira, de frente e com boa '
+              'luz, com os quatro quadrados pretos dos cantos aparecendo.',
+            ),
+            const SizedBox(height: 16),
+            if (lendo)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Lendo a folha...'),
+                  ],
+                ),
+              )
+            else ...[
+              ElevatedButton.icon(
+                onPressed: aoFotografar,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: const Text('Fotografar folha'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: aoEscolherFoto,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('Escolher foto da folha'),
+              ),
+            ],
+            if (lida != null && !lendo) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: AppCores.sucesso),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${lida.lidas} de ${lida.respostas.length} questões '
+                      'reconhecidas.',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              if (lida.emBranco.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text('Em branco: ${_questoes(lida.emBranco)}.'),
+              ],
+              if (lida.marcacaoDupla.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Mais de uma alternativa marcada: '
+                  '${_questoes(lida.marcacaoDupla)}.',
+                ),
+              ],
+              const SizedBox(height: 6),
+              Text(
+                lida.emBranco.isEmpty && lida.marcacaoDupla.isEmpty
+                    ? 'Confira as respostas abaixo antes de salvar.'
+                    : 'As questões em destaque abaixo precisam ser conferidas '
+                          'na folha antes de salvar.',
+                style: const TextStyle(color: AppCores.textoSuave),
+              ),
+            ],
+          ],
         ),
       ),
     );
