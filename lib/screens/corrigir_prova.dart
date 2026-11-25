@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'package:mobile/services/correcao_folha.dart';
 import 'package:mobile/services/leitor_marcacoes.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 import 'package:mobile/theme/app_theme.dart';
@@ -426,9 +427,9 @@ class _ProvaAlunoLidaScreenState
 
   int? _acertos;
 
-  /// Alternativa marcada em cada questão (id -> índice na ordem original),
-  /// preenchida ao conferir. É o que vai para o resultado salvo.
-  Map<String, int?> _respostasOriginais = {};
+  /// Resultado montado ao conferir, já com as respostas na ordem original
+  /// das questões. É exatamente o que vai para o Firestore.
+  Resultado? _resultadoConferido;
 
   final _questaoService = QuestaoService();
   final _resultadoService = ResultadoService();
@@ -481,6 +482,7 @@ class _ProvaAlunoLidaScreenState
       setState(() {
         _leitura = lidas;
         _acertos = null;
+        _resultadoConferido = null;
         _respostasMarcadas
           ..clear()
           ..addAll({
@@ -514,86 +516,74 @@ class _ProvaAlunoLidaScreenState
     );
   }
 
-  /// Confere manualmente as respostas informadas.
-  void _conferirRespostas(VariacaoProva variacao) {
-    if (_respostasMarcadas.length !=
-        variacao.questoes.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+  /// Confere as respostas marcadas (lidas da folha ou escolhidas à mão).
+  /// Questões sem resposta podem ficar em branco e contam como erro.
+  Future<void> _conferirRespostas(VariacaoProva variacao) async {
+    final emBranco = CorrecaoFolha.emBranco(variacao, _respostasMarcadas);
+
+    if (emBranco.isNotEmpty) {
+      final continuar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Questões em branco'),
           content: Text(
-            'Informe uma resposta para cada questão.',
+            emBranco.length == 1
+                ? 'A questão ${emBranco.first + 1} está sem resposta e '
+                    'vai contar como erro. Deseja continuar?'
+                : 'As questões ${emBranco.map((i) => i + 1).join(', ')} '
+                    'estão sem resposta e vão contar como erro. '
+                    'Deseja continuar?',
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Voltar e revisar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continuar'),
+            ),
+          ],
         ),
       );
-      return;
+      if (continuar != true || !mounted) return;
     }
 
-    var totalAcertos = 0;
-    final respostasOriginais = <String, int?>{};
-
-    for (var i = 0; i < variacao.questoes.length; i++) {
-      final questao = variacao.questoes[i];
-      final indiceMarcado = _respostasMarcadas[i]!;
-
-      final indiceCorreto =
-          questao.alternativas.indexWhere(
-        (alternativa) => alternativa.isCorreta,
+    try {
+      final resultado = CorrecaoFolha.corrigir(
+        prova: widget.prova,
+        aluno: widget.aluno,
+        variacao: variacao,
+        marcadas: _respostasMarcadas,
       );
 
-      final originalMarcado =
-          questao.indiceOriginal(indiceMarcado);
-
-      final originalCorreto =
-          questao.indiceOriginal(indiceCorreto);
-
-      if (originalMarcado == null ||
-          originalCorreto == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Não foi possível conferir o gabarito '
-              'desta questão.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      respostasOriginais[questao.questaoId] = originalMarcado;
-
-      if (originalMarcado == originalCorreto) {
-        totalAcertos++;
-      }
+      setState(() {
+        _resultadoConferido = resultado;
+        _acertos = resultado.acertos;
+      });
+    } on CorrecaoFolhaException catch (e) {
+      _avisar(e.mensagem);
     }
-
-    setState(() {
-      _acertos = totalAcertos;
-      _respostasOriginais = respostasOriginais;
-    });
   }
 
   /// Grava o resultado conferido (substituindo o anterior do aluno nesta
   /// prova) e abre a tela de resultado com os dados reais.
   Future<void> _registrarResultado() async {
-    if (_salvando) return;
+    final resultado = _resultadoConferido;
+    if (_salvando || resultado == null) return;
     setState(() => _salvando = true);
 
     try {
+      await _resultadoService.salvar(resultado);
+
+      // As questões são carregadas só para a tela de resultado mostrar os
+      // enunciados; a nota salva é a conferida acima.
       final todas = await _questaoService.listar().first;
       final porId = {for (final q in todas) q.id: q};
       final questoes = [
         for (final id in widget.prova.questaoIds)
           if (porId[id] != null) porId[id]!,
       ];
-
-      final resultado = Resultado.corrigir(
-        provaId: widget.prova.id,
-        aluno: widget.aluno,
-        questoes: questoes,
-        respostas: _respostasOriginais,
-      );
-
-      await _resultadoService.salvar(resultado);
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -728,8 +718,15 @@ class _ProvaAlunoLidaScreenState
                       child: OutlinedButton(
                         onPressed: () {
                           setState(() {
-                            _respostasMarcadas[i] = j;
+                            // Tocar de novo na marcada deixa a questão
+                            // em branco.
+                            if (_respostasMarcadas[i] == j) {
+                              _respostasMarcadas.remove(i);
+                            } else {
+                              _respostasMarcadas[i] = j;
+                            }
                             _acertos = null;
+                            _resultadoConferido = null;
                           });
                         },
                         child: Row(
@@ -794,6 +791,16 @@ class _ProvaAlunoLidaScreenState
                   Text(
                     'Nota: ${(_acertos! / variacao.questoes.length * 10).toStringAsFixed(1)}',
                   ),
+
+                  if (_resultadoConferido != null &&
+                      _resultadoConferido!.respostas.values
+                          .any((resposta) => resposta == null)) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Em branco: ${_resultadoConferido!.respostas.values.where((resposta) => resposta == null).length}',
+                      style: const TextStyle(color: AppCores.textoSuave),
+                    ),
+                  ],
 
                   const SizedBox(height: 8),
 
