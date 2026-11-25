@@ -119,8 +119,8 @@ class LocalizadorProva {
 
     // Digitado à mão: procura primeiro pela matrícula e, se não achar,
     // pelo código do aluno no banco.
-    final aluno = await buscarAlunoPorMatricula?.call(texto) ??
-        await buscarAluno(texto);
+    final aluno =
+        await buscarAlunoPorMatricula?.call(texto) ?? await buscarAluno(texto);
     if (aluno == null) {
       throw LeituraQrCodeException(
         'Nenhum aluno encontrado com a matrícula "$texto".',
