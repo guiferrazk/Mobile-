@@ -39,6 +39,18 @@ class VariacaoProvaService {
     return VariacaoProva.fromMap(dados);
   }
 
+  /// Ids dos alunos que já têm a variação desta prova gerada. O id de cada
+  /// documento da subcoleção é o id do aluno.
+  Future<Set<String>> alunosComVariacao(String provaId) async {
+    final snapshot = await _firestore
+        .collection('provas')
+        .doc(provaId)
+        .collection('variacoes')
+        .get();
+
+    return {for (final doc in snapshot.docs) doc.id};
+  }
+
   /// Gera e salva uma variação se ela ainda não existir.
   /// Caso exista, devolve sempre a mesma versão.
   Future<VariacaoProva> gerarOuRecuperar({
