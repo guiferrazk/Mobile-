@@ -217,7 +217,7 @@ class _CorrigirProvaScreenState
     final aluno = await Navigator.push<Aluno>(
       context,
       MaterialPageRoute(
-        builder: (_) => const SelecionarAlunoScreen(),
+        builder: (_) => SelecionarAlunoScreen(provaId: prova.id),
       ),
     );
 
