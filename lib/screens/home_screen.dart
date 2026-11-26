@@ -71,12 +71,16 @@ class HomeScreen extends StatelessWidget {
           children: [
             _Cabecalho(data: _dataDeHoje()),
             Expanded(
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 560),
-                  child: ListView(
-                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+              // A lista ocupa a largura toda (para a barra de rolagem ficar
+              // na borda da janela) e o conteúdo fica centralizado com no
+              // máximo 560 px de largura.
+              child: LayoutBuilder(
+                builder: (context, restricoes) {
+                  final margem = ((restricoes.maxWidth - 560) / 2)
+                      .clamp(20.0, double.infinity);
+
+                  return ListView(
+                    padding: EdgeInsets.fromLTRB(margem, 24, margem, 32),
                     children: [
                       _AtalhoPrincipal(
                         icone: Icons.document_scanner_outlined,
@@ -185,8 +189,8 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                     ],
-                  ),
-                ),
+                  );
+                },
               ),
             ),
           ],
@@ -416,7 +420,7 @@ class _Atalho {
   });
 }
 
-/// Seção com lista de atalhos.
+/// Seção com os atalhos em grade de cards, dois por linha.
 class _Secao extends StatelessWidget {
   final String titulo;
   final List<_Atalho> atalhos;
@@ -444,94 +448,91 @@ class _Secao extends StatelessWidget {
           ),
         ),
 
-        Material(
-          color: Colors.white,
-          clipBehavior: Clip.antiAlias,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6),
-            side: const BorderSide(
-              color: AppCores.borda,
-            ),
-          ),
-          child: Column(
-            children: [
-              for (var i = 0; i < atalhos.length; i++) ...[
-                if (i > 0)
-                  const Divider(
-                    height: 1,
-                    color: AppCores.borda,
-                  ),
-
-                _LinhaAtalho(
-                  atalho: atalhos[i],
+        for (var i = 0; i < atalhos.length; i += 2) ...[
+          if (i > 0) const SizedBox(height: 12),
+          // IntrinsicHeight deixa os dois cards da linha com a mesma altura,
+          // mesmo quando um subtítulo quebra em mais linhas que o outro.
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(child: _CardAtalho(atalho: atalhos[i])),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: i + 1 < atalhos.length
+                      ? _CardAtalho(atalho: atalhos[i + 1])
+                      : const SizedBox.shrink(),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
+        ],
       ],
     );
   }
 }
 
-/// Linha clicável de um atalho.
-class _LinhaAtalho extends StatelessWidget {
+/// Card clicável de um atalho, com o ícone em destaque.
+class _CardAtalho extends StatelessWidget {
   final _Atalho atalho;
 
-  const _LinhaAtalho({
+  const _CardAtalho({
     required this.atalho,
   });
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: atalho.aoTocar,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        child: Row(
-          children: [
-            Icon(
-              atalho.icone,
-              size: 26,
-              color: AppCores.vinho,
-            ),
-
-            const SizedBox(width: 16),
-
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    atalho.titulo,
-                    style: const TextStyle(
-                      color: AppCores.texto,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-
-                  const SizedBox(height: 2),
-
-                  Text(
-                    atalho.subtitulo,
-                    style: const TextStyle(
-                      color: AppCores.textoSuave,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
+    return Material(
+      color: AppCores.superficie,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: const BorderSide(color: AppCores.borda),
+      ),
+      child: InkWell(
+        onTap: atalho.aoTocar,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppCores.vinho.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(
+                  atalho.icone,
+                  size: 24,
+                  color: AppCores.vinho,
+                ),
               ),
-            ),
 
-            const Icon(
-              Icons.chevron_right,
-              color: AppCores.textoSuave,
-            ),
-          ],
+              const SizedBox(height: 14),
+
+              Text(
+                atalho.titulo,
+                style: const TextStyle(
+                  color: AppCores.texto,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              Text(
+                atalho.subtitulo,
+                style: const TextStyle(
+                  color: AppCores.textoSuave,
+                  fontSize: 12.5,
+                  height: 1.35,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
