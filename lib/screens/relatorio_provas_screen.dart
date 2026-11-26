@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:mobile/models/prova_model.dart';
+import 'package:mobile/models/questao_model.dart';
 import 'package:mobile/models/resultado_model.dart';
 import 'package:mobile/models/status_prova.dart';
 import 'package:mobile/screens/estatisticas_prova_screen.dart';
+import 'package:mobile/screens/resultado_prova_screen.dart';
 import 'package:mobile/services/exportacao_resultados_service.dart';
 import 'package:mobile/services/prova_service.dart';
+import 'package:mobile/services/questao_service.dart';
 import 'package:mobile/services/resultado_service.dart';
 import 'package:mobile/services/variacao_prova_service.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 import 'package:mobile/theme/app_theme.dart';
 
@@ -21,6 +25,7 @@ class RelatorioProvasScreen extends StatefulWidget {
     super.key,
     this.listarResultados,
     this.carregarProvas,
+    this.carregarQuestoes,
   });
 
   final Stream<List<Resultado>> Function()? listarResultados;
@@ -28,6 +33,10 @@ class RelatorioProvasScreen extends StatefulWidget {
   /// Provas do professor com os alunos que receberam cada uma. Usado no
   /// status de correção; nos testes, pode ser trocado por dados fixos.
   final Future<List<ProvaComAlunos>> Function()? carregarProvas;
+
+  /// Questões de uma prova, na ordem da prova. Usado para abrir o resultado
+  /// de um aluno; nos testes, pode ser trocado por dados fixos.
+  final Future<List<Questao>> Function(String provaId)? carregarQuestoes;
 
   @override
   State<RelatorioProvasScreen> createState() => _RelatorioProvasScreenState();
@@ -45,6 +54,10 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
   late final Future<List<ProvaComAlunos>> Function() _carregarProvas =
       widget.carregarProvas ?? _provasDoFirestore;
   late Future<List<ProvaComAlunos>> _provasFuture;
+
+  late final Future<List<Questao>> Function(String provaId)
+      _carregarQuestoes = widget.carregarQuestoes ?? _questoesDoFirestore;
+  bool _abrindoResultado = false;
 
   @override
   void initState() {
@@ -84,6 +97,60 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
         ),
       ),
     );
+  }
+
+  static Future<List<Questao>> _questoesDoFirestore(String provaId) async {
+    final prova = await ProvaService().buscarPorId(provaId);
+    if (prova == null) return const [];
+
+    final todas = await QuestaoService().listar().first;
+    final porId = {for (final questao in todas) questao.id: questao};
+    return [
+      for (final id in prova.questaoIds)
+        if (porId[id] != null) porId[id]!,
+    ];
+  }
+
+  /// Abre o resultado do aluno: nota e cada questão certa, errada ou em
+  /// branco. As questões são buscadas para mostrar os enunciados.
+  Future<void> _abrirResultado(Resultado resultado) async {
+    if (_abrindoResultado) return;
+    _abrindoResultado = true;
+
+    try {
+      final questoes = await _carregarQuestoes(resultado.provaId);
+      if (!mounted) return;
+
+      if (questoes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('As questões desta prova não foram encontradas.'),
+          ),
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResultadoProvaScreen(
+            resultado: resultado,
+            questoes: questoes,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível abrir o resultado. ${MensagensErro.de(e)}',
+          ),
+        ),
+      );
+    } finally {
+      _abrindoResultado = false;
+    }
   }
 
   void _abrirEstatisticas(String provaId) {
@@ -272,17 +339,10 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             contentPadding: const EdgeInsets.all(12),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EstatisticasProvaScreen(
-                                    provaId: resultado.provaId,
-                                  ),
-                                ),
-                              );
-                            },
-                            trailing: const Icon(Icons.bar_chart),
+                            // Abre a correção deste aluno; as estatísticas da
+                            // prova ficam no card de status.
+                            onTap: () => _abrirResultado(resultado),
+                            trailing: const Icon(Icons.chevron_right),
                             leading: CircleAvatar(
                               backgroundColor: corDaNota.withValues(
                                 alpha: 0.15,

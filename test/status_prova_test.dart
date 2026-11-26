@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mobile/models/alternativa_model.dart';
 import 'package:mobile/models/prova_model.dart';
+import 'package:mobile/models/questao_model.dart';
 import 'package:mobile/models/resultado_model.dart';
 import 'package:mobile/models/status_prova.dart';
 import 'package:mobile/screens/relatorio_provas_screen.dart';
@@ -172,6 +174,59 @@ void main() {
 
       expect(find.text('STATUS DAS PROVAS'), findsNothing);
       expect(find.text('Aluno a1'), findsOneWidget);
+    });
+
+    testWidgets('tocar no aluno abre a correção dele', (tester) async {
+      final ana = Resultado(
+        provaId: 'p1',
+        alunoId: 'a1',
+        alunoNome: 'Ana Souza',
+        alunoMatricula: '2024001',
+        respostas: const {'q1': 1, 'q2': null},
+        acertos: 1,
+        totalQuestoes: 2,
+      );
+      String? provaBuscada;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RelatorioProvasScreen(
+            listarResultados: () => Stream.value([ana]),
+            carregarProvas: () async => const [],
+            carregarQuestoes: (provaId) async {
+              provaBuscada = provaId;
+              return [
+                Questao(
+                  id: 'q1',
+                  enunciado: 'Primeira',
+                  alternativas: [
+                    Alternativa(texto: 'A', isCorreta: false),
+                    Alternativa(texto: 'B', isCorreta: true),
+                  ],
+                ),
+                Questao(
+                  id: 'q2',
+                  enunciado: 'Segunda',
+                  alternativas: [
+                    Alternativa(texto: 'A', isCorreta: true),
+                    Alternativa(texto: 'B', isCorreta: false),
+                  ],
+                ),
+              ];
+            },
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Ana Souza'));
+      await tester.pumpAndSettle();
+
+      expect(provaBuscada, 'p1');
+      expect(find.text('Resultado da Correção'), findsOneWidget);
+      expect(find.text('Acertos: 1 de 2'), findsOneWidget);
+      expect(find.text('Correta'), findsOneWidget);
+      expect(find.text('Em branco'), findsOneWidget);
     });
   });
 }
