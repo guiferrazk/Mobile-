@@ -1,6 +1,10 @@
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
+import 'package:mobile/services/correcao_folha.dart';
+import 'package:mobile/services/leitor_marcacoes.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 import 'package:mobile/theme/app_theme.dart';
 import 'package:mobile/utils/mensagens_erro.dart';
@@ -423,13 +427,84 @@ class _ProvaAlunoLidaScreenState
 
   int? _acertos;
 
-  /// Alternativa marcada em cada questão (id -> índice na ordem original),
-  /// preenchida ao conferir. É o que vai para o resultado salvo.
-  Map<String, int?> _respostasOriginais = {};
+  /// Resultado montado ao conferir, já com as respostas na ordem original
+  /// das questões. É exatamente o que vai para o Firestore.
+  Resultado? _resultadoConferido;
 
   final _questaoService = QuestaoService();
   final _resultadoService = ResultadoService();
   bool _salvando = false;
+
+  bool _lendoFolha = false;
+  MarcacoesLidas? _leitura;
+
+  bool _precisaConferir(int questao) {
+    final leitura = _leitura;
+    if (leitura == null) return false;
+    return leitura.emBranco.contains(questao) ||
+        leitura.marcacaoDupla.contains(questao);
+  }
+
+  /// Fotografa (ou escolhe a foto da) folha de respostas e preenche a
+  /// conferência com as alternativas reconhecidas. O professor confere
+  /// antes de salvar.
+  Future<void> _lerFolha(VariacaoProva variacao, ImageSource origem) async {
+    if (_lendoFolha) return;
+
+    final XFile? foto;
+    try {
+      foto = await ImagePicker().pickImage(
+        source: origem,
+        maxWidth: 2400,
+        maxHeight: 2400,
+        imageQuality: 92,
+      );
+    } catch (_) {
+      _avisar(
+        'Não foi possível abrir a câmera. Confira se o app tem '
+        'permissão para usá-la.',
+      );
+      return;
+    }
+    if (foto == null || !mounted) return;
+
+    setState(() => _lendoFolha = true);
+
+    try {
+      final bytes = await foto.readAsBytes();
+      final alternativas = [
+        for (final questao in variacao.questoes) questao.alternativas.length,
+      ];
+      // A leitura percorre a foto inteira; em segundo plano a tela não trava.
+      final lidas = await compute(_lerMarcacoes, (bytes, alternativas));
+      if (!mounted) return;
+
+      setState(() {
+        _leitura = lidas;
+        _acertos = null;
+        _resultadoConferido = null;
+        _respostasMarcadas
+          ..clear()
+          ..addAll({
+            for (var i = 0; i < lidas.respostas.length; i++)
+              if (lidas.respostas[i] != null) i: lidas.respostas[i]!,
+          });
+      });
+    } on LeituraFolhaException catch (e) {
+      _avisar(e.mensagem);
+    } catch (_) {
+      _avisar('Não foi possível ler a folha. Tente outra foto.');
+    } finally {
+      if (mounted) setState(() => _lendoFolha = false);
+    }
+  }
+
+  void _avisar(String mensagem) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(mensagem)),
+    );
+  }
 
   @override
   void initState() {
@@ -441,86 +516,74 @@ class _ProvaAlunoLidaScreenState
     );
   }
 
-  /// Confere manualmente as respostas informadas.
-  void _conferirRespostas(VariacaoProva variacao) {
-    if (_respostasMarcadas.length !=
-        variacao.questoes.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+  /// Confere as respostas marcadas (lidas da folha ou escolhidas à mão).
+  /// Questões sem resposta podem ficar em branco e contam como erro.
+  Future<void> _conferirRespostas(VariacaoProva variacao) async {
+    final emBranco = CorrecaoFolha.emBranco(variacao, _respostasMarcadas);
+
+    if (emBranco.isNotEmpty) {
+      final continuar = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Questões em branco'),
           content: Text(
-            'Informe uma resposta para cada questão.',
+            emBranco.length == 1
+                ? 'A questão ${emBranco.first + 1} está sem resposta e '
+                    'vai contar como erro. Deseja continuar?'
+                : 'As questões ${emBranco.map((i) => i + 1).join(', ')} '
+                    'estão sem resposta e vão contar como erro. '
+                    'Deseja continuar?',
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Voltar e revisar'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Continuar'),
+            ),
+          ],
         ),
       );
-      return;
+      if (continuar != true || !mounted) return;
     }
 
-    var totalAcertos = 0;
-    final respostasOriginais = <String, int?>{};
-
-    for (var i = 0; i < variacao.questoes.length; i++) {
-      final questao = variacao.questoes[i];
-      final indiceMarcado = _respostasMarcadas[i]!;
-
-      final indiceCorreto =
-          questao.alternativas.indexWhere(
-        (alternativa) => alternativa.isCorreta,
+    try {
+      final resultado = CorrecaoFolha.corrigir(
+        prova: widget.prova,
+        aluno: widget.aluno,
+        variacao: variacao,
+        marcadas: _respostasMarcadas,
       );
 
-      final originalMarcado =
-          questao.indiceOriginal(indiceMarcado);
-
-      final originalCorreto =
-          questao.indiceOriginal(indiceCorreto);
-
-      if (originalMarcado == null ||
-          originalCorreto == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Não foi possível conferir o gabarito '
-              'desta questão.',
-            ),
-          ),
-        );
-        return;
-      }
-
-      respostasOriginais[questao.questaoId] = originalMarcado;
-
-      if (originalMarcado == originalCorreto) {
-        totalAcertos++;
-      }
+      setState(() {
+        _resultadoConferido = resultado;
+        _acertos = resultado.acertos;
+      });
+    } on CorrecaoFolhaException catch (e) {
+      _avisar(e.mensagem);
     }
-
-    setState(() {
-      _acertos = totalAcertos;
-      _respostasOriginais = respostasOriginais;
-    });
   }
 
   /// Grava o resultado conferido (substituindo o anterior do aluno nesta
   /// prova) e abre a tela de resultado com os dados reais.
   Future<void> _registrarResultado() async {
-    if (_salvando) return;
+    final resultado = _resultadoConferido;
+    if (_salvando || resultado == null) return;
     setState(() => _salvando = true);
 
     try {
+      await _resultadoService.salvar(resultado);
+
+      // As questões são carregadas só para a tela de resultado mostrar os
+      // enunciados; a nota salva é a conferida acima.
       final todas = await _questaoService.listar().first;
       final porId = {for (final q in todas) q.id: q};
       final questoes = [
         for (final id in widget.prova.questaoIds)
           if (porId[id] != null) porId[id]!,
       ];
-
-      final resultado = Resultado.corrigir(
-        provaId: widget.prova.id,
-        aluno: widget.aluno,
-        questoes: questoes,
-        respostas: _respostasOriginais,
-      );
-
-      await _resultadoService.salvar(resultado);
       if (!mounted) return;
 
       Navigator.pushReplacement(
@@ -592,6 +655,15 @@ class _ProvaAlunoLidaScreenState
 
         const SizedBox(height: 16),
 
+        _LeituraDaFolha(
+          lendo: _lendoFolha,
+          leitura: _leitura,
+          aoFotografar: () => _lerFolha(variacao, ImageSource.camera),
+          aoEscolherFoto: () => _lerFolha(variacao, ImageSource.gallery),
+        ),
+
+        const SizedBox(height: 16),
+
         const Text(
           'Conferência manual de respostas',
           style: TextStyle(
@@ -612,6 +684,13 @@ class _ProvaAlunoLidaScreenState
         for (var i = 0; i < variacao.questoes.length; i++)
           Card(
             margin: const EdgeInsets.only(bottom: 12),
+            // Questões que a leitura não conseguiu decidir ficam em destaque.
+            shape: _precisaConferir(i)
+                ? RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: AppCores.alerta, width: 2),
+                  )
+                : null,
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -639,8 +718,15 @@ class _ProvaAlunoLidaScreenState
                       child: OutlinedButton(
                         onPressed: () {
                           setState(() {
-                            _respostasMarcadas[i] = j;
+                            // Tocar de novo na marcada deixa a questão
+                            // em branco.
+                            if (_respostasMarcadas[i] == j) {
+                              _respostasMarcadas.remove(i);
+                            } else {
+                              _respostasMarcadas[i] = j;
+                            }
                             _acertos = null;
+                            _resultadoConferido = null;
                           });
                         },
                         child: Row(
@@ -705,6 +791,16 @@ class _ProvaAlunoLidaScreenState
                   Text(
                     'Nota: ${(_acertos! / variacao.questoes.length * 10).toStringAsFixed(1)}',
                   ),
+
+                  if (_resultadoConferido != null &&
+                      _resultadoConferido!.respostas.values
+                          .any((resposta) => resposta == null)) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Em branco: ${_resultadoConferido!.respostas.values.where((resposta) => resposta == null).length}',
+                      style: const TextStyle(color: AppCores.textoSuave),
+                    ),
+                  ],
 
                   const SizedBox(height: 8),
 
@@ -812,6 +908,115 @@ class _ProvaAlunoLidaScreenState
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Roda fora da tela (em outro isolate no celular) para a leitura da foto
+/// não travar a interface.
+MarcacoesLidas _lerMarcacoes((Uint8List, List<int>) dados) {
+  return LeitorMarcacoes.ler(dados.$1, alternativasPorQuestao: dados.$2);
+}
+
+/// Card com os botões para ler a folha pela câmera e o resumo da leitura.
+class _LeituraDaFolha extends StatelessWidget {
+  final bool lendo;
+  final MarcacoesLidas? leitura;
+  final VoidCallback aoFotografar;
+  final VoidCallback aoEscolherFoto;
+
+  const _LeituraDaFolha({
+    required this.lendo,
+    required this.leitura,
+    required this.aoFotografar,
+    required this.aoEscolherFoto,
+  });
+
+  String _questoes(List<int> indices) =>
+      indices.map((i) => '${i + 1}').join(', ');
+
+  @override
+  Widget build(BuildContext context) {
+    final lida = leitura;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text(
+              'Ler marcações da folha',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              'Fotografe a folha de respostas inteira, de frente e com boa '
+              'luz, com os quatro quadrados pretos dos cantos aparecendo.',
+            ),
+            const SizedBox(height: 16),
+            if (lendo)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 12),
+                    Text('Lendo a folha...'),
+                  ],
+                ),
+              )
+            else ...[
+              ElevatedButton.icon(
+                onPressed: aoFotografar,
+                icon: const Icon(Icons.photo_camera_outlined),
+                label: const Text('Fotografar folha'),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: aoEscolherFoto,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('Escolher foto da folha'),
+              ),
+            ],
+            if (lida != null && !lendo) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Icon(Icons.check_circle, color: AppCores.sucesso),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '${lida.lidas} de ${lida.respostas.length} questões '
+                      'reconhecidas.',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              if (lida.emBranco.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text('Em branco: ${_questoes(lida.emBranco)}.'),
+              ],
+              if (lida.marcacaoDupla.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Mais de uma alternativa marcada: '
+                  '${_questoes(lida.marcacaoDupla)}.',
+                ),
+              ],
+              const SizedBox(height: 6),
+              Text(
+                lida.emBranco.isEmpty && lida.marcacaoDupla.isEmpty
+                    ? 'Confira as respostas abaixo antes de salvar.'
+                    : 'As questões em destaque abaixo precisam ser conferidas '
+                          'na folha antes de salvar.',
+                style: const TextStyle(color: AppCores.textoSuave),
+              ),
+            ],
+          ],
         ),
       ),
     );
