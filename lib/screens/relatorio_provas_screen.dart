@@ -1,18 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:mobile/models/prova_model.dart';
+import 'package:mobile/models/questao_model.dart';
 import 'package:mobile/models/resultado_model.dart';
+import 'package:mobile/models/status_prova.dart';
 import 'package:mobile/screens/estatisticas_prova_screen.dart';
+import 'package:mobile/screens/resultado_prova_screen.dart';
 import 'package:mobile/services/exportacao_resultados_service.dart';
+import 'package:mobile/services/prova_service.dart';
+import 'package:mobile/services/questao_service.dart';
 import 'package:mobile/services/resultado_service.dart';
+import 'package:mobile/services/variacao_prova_service.dart';
+import 'package:mobile/utils/mensagens_erro.dart';
 import 'package:mobile/widgets/titulo_pagina.dart';
 import 'package:mobile/theme/app_theme.dart';
+
+/// Prova com os ids dos alunos que receberam a prova (variação gerada).
+typedef ProvaComAlunos = ({Prova prova, Set<String> alunos});
 
 /// Lista as provas já corrigidas, lendo os resultados do Firestore
 /// (coleção `resultados`). A lista atualiza sozinha quando um resultado
 /// novo é salvo.
 class RelatorioProvasScreen extends StatefulWidget {
-  const RelatorioProvasScreen({super.key, this.listarResultados});
+  const RelatorioProvasScreen({
+    super.key,
+    this.listarResultados,
+    this.carregarProvas,
+    this.carregarQuestoes,
+  });
 
   final Stream<List<Resultado>> Function()? listarResultados;
+
+  /// Provas do professor com os alunos que receberam cada uma. Usado no
+  /// status de correção; nos testes, pode ser trocado por dados fixos.
+  final Future<List<ProvaComAlunos>> Function()? carregarProvas;
+
+  /// Questões de uma prova, na ordem da prova. Usado para abrir o resultado
+  /// de um aluno; nos testes, pode ser trocado por dados fixos.
+  final Future<List<Questao>> Function(String provaId)? carregarQuestoes;
 
   @override
   State<RelatorioProvasScreen> createState() => _RelatorioProvasScreenState();
@@ -27,17 +51,115 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
   late Stream<List<Resultado>> _resultadosStream;
   bool _exportando = false;
 
+  late final Future<List<ProvaComAlunos>> Function() _carregarProvas =
+      widget.carregarProvas ?? _provasDoFirestore;
+  late Future<List<ProvaComAlunos>> _provasFuture;
+
+  late final Future<List<Questao>> Function(String provaId)
+      _carregarQuestoes = widget.carregarQuestoes ?? _questoesDoFirestore;
+  bool _abrindoResultado = false;
+
   @override
   void initState() {
     super.initState();
     _resultadosStream = _listarResultados();
+    _provasFuture = _carregarProvasSemFalhar();
   }
 
   // Cria o stream de novo. Usado no botão "Tentar novamente".
   void _recarregar() {
     setState(() {
       _resultadosStream = _listarResultados();
+      _provasFuture = _carregarProvasSemFalhar();
     });
+  }
+
+  /// O status é um complemento: se as provas não carregarem, ele só não
+  /// aparece, sem deixar um erro sem tratamento (a lista de resultados pode
+  /// nem estar na tela para mostrar o status).
+  Future<List<ProvaComAlunos>> _carregarProvasSemFalhar() async {
+    try {
+      return await _carregarProvas();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  static Future<List<ProvaComAlunos>> _provasDoFirestore() async {
+    final provas = await ProvaService().listar().first;
+    final variacoes = VariacaoProvaService();
+
+    return Future.wait(
+      provas.map(
+        (prova) async => (
+          prova: prova,
+          alunos: await variacoes.alunosComVariacao(prova.id),
+        ),
+      ),
+    );
+  }
+
+  static Future<List<Questao>> _questoesDoFirestore(String provaId) async {
+    final prova = await ProvaService().buscarPorId(provaId);
+    if (prova == null) return const [];
+
+    final todas = await QuestaoService().listar().first;
+    final porId = {for (final questao in todas) questao.id: questao};
+    return [
+      for (final id in prova.questaoIds)
+        if (porId[id] != null) porId[id]!,
+    ];
+  }
+
+  /// Abre o resultado do aluno: nota e cada questão certa, errada ou em
+  /// branco. As questões são buscadas para mostrar os enunciados.
+  Future<void> _abrirResultado(Resultado resultado) async {
+    if (_abrindoResultado) return;
+    _abrindoResultado = true;
+
+    try {
+      final questoes = await _carregarQuestoes(resultado.provaId);
+      if (!mounted) return;
+
+      if (questoes.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('As questões desta prova não foram encontradas.'),
+          ),
+        );
+        return;
+      }
+
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ResultadoProvaScreen(
+            resultado: resultado,
+            questoes: questoes,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Não foi possível abrir o resultado. ${MensagensErro.de(e)}',
+          ),
+        ),
+      );
+    } finally {
+      _abrindoResultado = false;
+    }
+  }
+
+  void _abrirEstatisticas(String provaId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EstatisticasProvaScreen(provaId: provaId),
+      ),
+    );
   }
 
   Future<void> _exportarExcel(List<Resultado> resultados) async {
@@ -199,26 +321,28 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
                   Expanded(
                     child: ListView.builder(
                       padding: const EdgeInsets.all(16),
-                      itemCount: resultados.length,
+                      // O primeiro item é o status de cada prova.
+                      itemCount: resultados.length + 1,
                       itemBuilder: (context, index) {
-                        final resultado = resultados[index];
+                        if (index == 0) {
+                          return _SecaoStatus(
+                            provas: _provasFuture,
+                            resultados: resultados,
+                            aoAbrir: _abrirEstatisticas,
+                          );
+                        }
+
+                        final resultado = resultados[index - 1];
                         final Color corDaNota = _corDaNota(resultado.nota);
 
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
                           child: ListTile(
                             contentPadding: const EdgeInsets.all(12),
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EstatisticasProvaScreen(
-                                    provaId: resultado.provaId,
-                                  ),
-                                ),
-                              );
-                            },
-                            trailing: const Icon(Icons.bar_chart),
+                            // Abre a correção deste aluno; as estatísticas da
+                            // prova ficam no card de status.
+                            onTap: () => _abrirResultado(resultado),
+                            trailing: const Icon(Icons.chevron_right),
                             leading: CircleAvatar(
                               backgroundColor: corDaNota.withValues(
                                 alpha: 0.15,
@@ -260,6 +384,163 @@ class _RelatorioProvasScreenState extends State<RelatorioProvasScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Andamento da correção de cada prova: quantos alunos já foram corrigidos
+/// entre os que receberam a prova, a média e a situação.
+class _SecaoStatus extends StatelessWidget {
+  final Future<List<ProvaComAlunos>> provas;
+  final List<Resultado> resultados;
+  final void Function(String provaId) aoAbrir;
+
+  const _SecaoStatus({
+    required this.provas,
+    required this.resultados,
+    required this.aoAbrir,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<List<ProvaComAlunos>>(
+      future: provas,
+      builder: (context, snapshot) {
+        // O status é um complemento da lista: se não carregar, a lista de
+        // resultados continua aparecendo normalmente.
+        final dados = snapshot.data;
+        if (dados == null) return const SizedBox.shrink();
+
+        final status = StatusProva.calcular(
+          provas: [for (final item in dados) item.prova],
+          alunosComProva: {
+            for (final item in dados) item.prova.id: item.alunos,
+          },
+          resultados: resultados,
+        );
+        if (status.isEmpty) return const SizedBox.shrink();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const _TituloSecao('Status das provas'),
+            for (final item in status)
+              _CardStatus(status: item, aoTocar: () => aoAbrir(item.provaId)),
+            const SizedBox(height: 12),
+            const _TituloSecao('Resultados por aluno'),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _TituloSecao extends StatelessWidget {
+  final String texto;
+
+  const _TituloSecao(this.texto);
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 2, bottom: 8),
+      child: Text(
+        texto.toUpperCase(),
+        style: const TextStyle(
+          color: AppCores.textoSuave,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.1,
+        ),
+      ),
+    );
+  }
+}
+
+class _CardStatus extends StatelessWidget {
+  final StatusProva status;
+  final VoidCallback aoTocar;
+
+  const _CardStatus({required this.status, required this.aoTocar});
+
+  ({String texto, Color cor, IconData icone}) get _situacao {
+    return switch (status.situacao) {
+      SituacaoCorrecao.concluida => (
+          texto: 'Correção concluída',
+          cor: AppCores.sucesso,
+          icone: Icons.check_circle,
+        ),
+      SituacaoCorrecao.emAndamento => (
+          texto: 'Em andamento',
+          cor: AppCores.alerta,
+          icone: Icons.timelapse,
+        ),
+      SituacaoCorrecao.naoIniciada => (
+          texto: 'Não iniciada',
+          cor: AppCores.textoSuave,
+          icone: Icons.radio_button_unchecked,
+        ),
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final situacao = _situacao;
+    final media = status.media;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: aoTocar,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      status.titulo,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Icon(situacao.icone, size: 18, color: situacao.cor),
+                  const SizedBox(width: 6),
+                  Text(
+                    situacao.texto,
+                    style: TextStyle(
+                      color: situacao.cor,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: status.progresso,
+                  minHeight: 8,
+                  color: situacao.cor,
+                  backgroundColor: AppCores.borda,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${status.corrigidos} de ${status.total} '
+                '${status.total == 1 ? 'aluno corrigido' : 'alunos corrigidos'}'
+                '${media == null ? '' : ' · Média ${media.toStringAsFixed(1)}'}',
+                style: const TextStyle(color: AppCores.textoSuave),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
